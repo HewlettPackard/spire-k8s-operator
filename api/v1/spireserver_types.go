@@ -27,15 +27,25 @@ import (
 type SpireServerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Name string `json:"name"`
 
-	// Foo is an example field of SpireServer. Edit spireserver_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	TrustDomain string `json:"trustDomain"`
+
+	Port int `json:"port"`
+
+	NodeAttestors []string `json:"nodeAttestors"`
+
+	// ServerDataPath string `json:"serverDataPath"` unsure how this would be validated so omitted for now
+	// default datastore is sqlite so no config for that
+
+	GeneratedKeyStorage string `json:"generatedKeyStorage"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer
 type SpireServerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Health string `json:"health"`
 }
 
 //+kubebuilder:object:root=true
