@@ -13,7 +13,7 @@ The definition can be found [here](../api/v1/spireserver_types.go).
 | `trustDomain`         | REQUIRED | The trust domain associated with the SPIRE server |
 | `port`                | REQUIRED | The port on which the SPIRE server Listens to agents |
 | `nodeAttestors`       | REQUIRED | The node attestor plugins the SPIRE server uses |
-| `generatedKeyStorage` | REQUIRED | Indicates whether the generated keys are stored on disk or in memory |
+| `keyStorage` | REQUIRED | Indicates whether the generated keys are stored on disk or in memory |
 
 ## SpireServerStatus
  Field | Description |
@@ -34,5 +34,5 @@ The definition can be found [here](../api/v1/spireserver_types.go).
     port: 8081
     nodeAttestors: 
         - k8s_sat
-    generatedKeyStorage: disk
+    keyStorage: disk
     ```

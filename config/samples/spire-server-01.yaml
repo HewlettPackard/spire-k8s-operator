@@ -8,4 +8,4 @@ spec:
   port: 8081
   nodeAttestors: 
     - k8s_sat
-  generatedKeyStorage: disk
+  KeyStorage: disk
