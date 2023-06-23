@@ -27,12 +27,12 @@ The definition can be found [here](../api/v1/spireserver_types.go).
     apiVersion: spire.hpe.com/v1
     kind: SpireServer
     metadata:
-    name: spire-server-01
+        name: spire-server-01
     spec:
-    name: spire-server-01
-    trustDomain: example.org
-    port: 8081
-    nodeAttestors: 
-        - k8s_sat
-    keyStorage: disk
+        name: spire-server-01
+        trustDomain: example.org
+        port: 8081
+        nodeAttestors: 
+            - k8s_sat
+        keyStorage: disk
     ```
