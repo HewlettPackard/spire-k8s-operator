@@ -18,7 +18,10 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"os/exec"
 
+	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,6 +34,17 @@ import (
 type SpireServerReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+}
+
+type TruatBundelMetadata struct {
+	Name      string `yaml:"name"`
+	Namespace string `yaml:"namespace"`
+}
+
+type TrustBundle struct {
+	APIVersion string              `yaml:"apiVersion"`
+	Kind       string              `yaml:"kind"`
+	Metadata   TruatBundelMetadata `yaml:"metadata"`
 }
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
@@ -49,7 +63,7 @@ type SpireServerReconciler struct {
 func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	createSpireBundle()
 
 	return ctrl.Result{}, nil
 }
@@ -59,4 +73,22 @@ func (r *SpireServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&spirev1.SpireServer{}).
 		Complete(r)
+}
+
+func createSpireBundle() {
+
+	data := TruatBundelMetadata{
+		Name:      "spire-bundle",
+		Namespace: "sprie",
+	}
+	trustBundle := TrustBundle{
+		APIVersion: "v1",
+		Kind:       "ConfigMap",
+		Metadata:   data,
+	}
+	yamlData, err := yaml.Marshal(&trustBundle)
+	if err != nil {
+		fmt.Printf("Error while Marshaling. %v", err)
+	}
+	exec.Command(fmt.Sprintf("kubectl apply -f <<EOF %s EOF", string(yamlData)), "./")
 }
