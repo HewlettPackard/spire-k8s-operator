@@ -1,0 +1,12 @@
+apiVersion: spire.hpe.com/v1
+kind: SpireServer
+metadata:
+  labels:
+    app.kubernetes.io/name: spireserver
+    app.kubernetes.io/instance: spireserver-sample
+    app.kubernetes.io/part-of: spire-k8s-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: spire-k8s-operator
+  name: spireserver-sample
+spec:
+  # TODO(user): Add fields here
