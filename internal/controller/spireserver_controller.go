@@ -19,6 +19,9 @@ package controller
 import (
 	"context"
 
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,9 +52,38 @@ type SpireServerReconciler struct {
 func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
+	logger := log.Log.WithValues("spireServer", req.NamespacedName)
+
 	// TODO(user): your logic here
+	spireServer := &spirev1.SpireServer{}
+	clusterRoles := r.spireRoleDeployment(spireServer, req.NamespacedName.String())
+
+	err := r.Create(ctx, clusterRoles)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.Role {
+	rules := rbacv1.PolicyRule{
+		Verbs:     []string{"patch", "get", "list"},
+		Resources: []string{"configmap"},
+		APIGroups: []string{""},
+	}
+
+	clusterRole := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-server-configmap-role",
+			Namespace: namespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			rules,
+		},
+	}
+	return clusterRole
 }
 
 // SetupWithManager sets up the controller with the Manager.
