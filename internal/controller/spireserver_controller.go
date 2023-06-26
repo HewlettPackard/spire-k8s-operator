@@ -18,7 +18,11 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"regexp"
+	"strings"
 
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,6 +36,10 @@ type SpireServerReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+var (
+	supportedNodeAttestors = []string{"k8s_sat"}
+)
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers/status,verbs=get;update;patch
@@ -48,10 +56,69 @@ type SpireServerReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+	logger := log.Log.WithValues("SpireServer", req.NamespacedName)
 
-	// TODO(user): your logic here
+	server := &spirev1.SpireServer{}
+
+	// fetching SPIRE Server instance
+	err := r.Get(ctx, req.NamespacedName, server)
+	if err != nil {
+		if apiErrors.IsNotFound(err) {
+			logger.Error(err, "SPIRE server not found.")
+			return ctrl.Result{}, nil
+		}
+
+		logger.Error(err, "Failed to get SPIRE Server instance.")
+		return ctrl.Result{}, nil
+	}
+
+	err = validateYaml(server)
+	if err != nil {
+		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
+		err = r.Delete(ctx, server)
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func validateYaml(s *spirev1.SpireServer) error {
+	if len(s.Spec.Name) == 0 {
+		return errors.New("SPIRE Server name is empty")
+	}
+
+	// trust domain takes the same form as a DNS Name
+	validDns, err := regexp.MatchString("^([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9].)+[A-Za-z]{2,}$", s.Spec.TrustDomain)
+	if err != nil {
+		return errors.New("cannot validate DNS name for trust domain")
+	} else if !validDns {
+		return errors.New("trust domain is not a valid DNS name")
+	}
+
+	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535) {
+		return errors.New("invalid port number") //TODO: should we restrict to other ports? This is basic for all ports.
+	}
+
+	var match bool
+	for _, currAttestor := range s.Spec.NodeAttestors {
+		match = false
+		for _, nodeAttestor := range supportedNodeAttestors {
+			if strings.Compare(currAttestor, nodeAttestor) == 0 {
+				match = true
+				break
+			}
+		}
+	}
+
+	if !match {
+		return errors.New("incorrect node attestors list inputted: at least one of the specified node attestors is not supported")
+	}
+
+	if !((strings.Compare("disk", strings.ToLower(s.Spec.GeneratedKeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.GeneratedKeyStorage)) == 0)) {
+		return errors.New("generated key storage is only supported on disk or in memory")
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
