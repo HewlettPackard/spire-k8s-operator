@@ -18,10 +18,9 @@ package controller
 
 import (
 	"context"
-	"fmt"
-	"os/exec"
 
-	"gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -63,9 +62,29 @@ type TrustBundle struct {
 func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	createSpireBundle()
+	logger := log.Log.WithValues("spireServer", req.NamespacedName)
+
+	// TODO(user): your logic here
+	spireServer := &spirev1.SpireServer{}
+	bundle := r.spireBundleDeployment(spireServer, req.NamespacedName.String())
+
+	err := r.Create(ctx, bundle)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, namespace string) *corev1.ConfigMap {
+	bundle := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-bundle",
+			Namespace: namespace,
+		},
+	}
+	return bundle
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -73,22 +92,4 @@ func (r *SpireServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&spirev1.SpireServer{}).
 		Complete(r)
-}
-
-func createSpireBundle() {
-
-	data := TruatBundelMetadata{
-		Name:      "spire-bundle",
-		Namespace: "sprie",
-	}
-	trustBundle := TrustBundle{
-		APIVersion: "v1",
-		Kind:       "ConfigMap",
-		Metadata:   data,
-	}
-	yamlData, err := yaml.Marshal(&trustBundle)
-	if err != nil {
-		fmt.Printf("Error while Marshaling. %v", err)
-	}
-	exec.Command(fmt.Sprintf("kubectl apply -f <<EOF %s EOF", string(yamlData)), "./")
 }
