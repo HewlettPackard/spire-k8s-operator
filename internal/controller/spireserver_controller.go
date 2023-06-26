@@ -22,6 +22,9 @@ import (
 	"regexp"
 	"strings"
 
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,10 +61,10 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	_ = log.FromContext(ctx)
 	logger := log.Log.WithValues("SpireServer", req.NamespacedName)
 
-	server := &spirev1.SpireServer{}
+	spireserver := &spirev1.SpireServer{}
 
 	// fetching SPIRE Server instance
-	err := r.Get(ctx, req.NamespacedName, server)
+	err := r.Get(ctx, req.NamespacedName, spireserver)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
 			logger.Error(err, "SPIRE server not found.")
@@ -72,10 +75,18 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	err = validateYaml(server)
+	err = validateYaml(spireserver)
 	if err != nil {
 		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
-		err = r.Delete(ctx, server)
+		err = r.Delete(ctx, spireserver)
+		return ctrl.Result{}, err
+	}
+
+	roleBinding := r.spireRoleBindingDeployment(spireserver, req.NamespacedName.String())
+
+	err = r.Create(ctx, roleBinding)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
 		return ctrl.Result{}, err
 	}
 
@@ -115,6 +126,31 @@ func validateYaml(s *spirev1.SpireServer) error {
 	}
 
 	return nil
+}
+
+func (r *SpireServerReconciler) spireRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.RoleBinding {
+	subject := rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      namespace,
+		Namespace: namespace,
+	}
+
+	roleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-server-configmap-role-binding",
+			Namespace: namespace,
+		},
+		Subjects: []rbacv1.Subject{
+			subject,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "v1",
+			Kind:     "Role",
+			Name:     "spire-server-configmap-role",
+		},
+	}
+	return roleBinding
+
 }
 
 // SetupWithManager sets up the controller with the Manager.
