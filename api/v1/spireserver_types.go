@@ -27,8 +27,6 @@ import (
 type SpireServerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Name string `json:"name"`
-
 	TrustDomain string `json:"trustDomain"`
 
 	Port int `json:"port"`
@@ -38,7 +36,7 @@ type SpireServerSpec struct {
 	// ServerDataPath string `json:"serverDataPath"` unsure how this would be validated so omitted for now
 	// default datastore is sqlite so no config for that
 
-	KeyStorage string `json:"KeyStorage"`
+	KeyStorage string `json:"keyStorage"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer
