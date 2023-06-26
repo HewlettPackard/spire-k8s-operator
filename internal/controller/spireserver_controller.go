@@ -22,6 +22,9 @@ import (
 	"regexp"
 	"strings"
 
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,10 +61,10 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	_ = log.FromContext(ctx)
 	logger := log.Log.WithValues("SpireServer", req.NamespacedName)
 
-	server := &spirev1.SpireServer{}
+	spireServer := &spirev1.SpireServer{}
 
 	// fetching SPIRE Server instance
-	err := r.Get(ctx, req.NamespacedName, server)
+	err := r.Get(ctx, req.NamespacedName, spireServer)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
 			logger.Error(err, "SPIRE server not found.")
@@ -72,10 +75,18 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	err = validateYaml(server)
+	err = validateYaml(spireServer)
 	if err != nil {
 		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
-		err = r.Delete(ctx, server)
+		err = r.Delete(ctx, spireServer)
+		return ctrl.Result{}, err
+	}
+
+	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireServer, req.NamespacedName.String())
+
+	err := r.Create(ctx, clusterRoleBinding)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
 		return ctrl.Result{}, err
 	}
 
@@ -115,6 +126,25 @@ func validateYaml(s *spirev1.SpireServer) error {
 	}
 
 	return nil
+}
+
+func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
+	rules := rbacv1.PolicyRule{
+		Verbs:     []string{"patch", "get", "list"},
+		Resources: []string{"configmap"},
+		APIGroups: []string{""},
+	}
+
+	clusterRole := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-server-configmap-role",
+			Namespace: namespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			rules,
+		},
+	}
+	return clusterRole
 }
 
 // SetupWithManager sets up the controller with the Manager.
