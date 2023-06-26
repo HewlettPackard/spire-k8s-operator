@@ -27,8 +27,6 @@ import (
 type SpireServerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Name string `json:"name"`
-
 	TrustDomain string `json:"trustDomain"`
 
 	Port int `json:"port"`

@@ -9,7 +9,6 @@ The definition can be found [here](../api/v1/spireserver_types.go).
 ## SpireServerSpec
 | Field | Required | Description |
 | ----- | -------- | ----------- |
-| `name`                | REQUIRED | The name of the SPIRE server |
 | `trustDomain`         | REQUIRED | The trust domain associated with the SPIRE server |
 | `port`                | REQUIRED | The port on which the SPIRE server Listens to agents |
 | `nodeAttestors`       | REQUIRED | The node attestor plugins the SPIRE server uses |

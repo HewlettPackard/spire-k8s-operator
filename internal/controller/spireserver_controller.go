@@ -83,10 +83,6 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
-	if len(s.Spec.Name) == 0 {
-		return errors.New("SPIRE Server name is empty")
-	}
-
 	// trust domain takes the same form as a DNS Name
 	validDns, err := regexp.MatchString("^([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9].)+[A-Za-z]{2,}$", s.Spec.TrustDomain)
 	if err != nil {

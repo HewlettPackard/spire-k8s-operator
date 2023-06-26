@@ -3,7 +3,6 @@ kind: SpireServer
 metadata:
   name: spire-server-01
 spec:
-  name: spire-server-01
   trustDomain: example.org
   port: 8081
   nodeAttestors: 
