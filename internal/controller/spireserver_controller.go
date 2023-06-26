@@ -84,7 +84,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireServer, req.NamespacedName.String())
 
-	err := r.Create(ctx, clusterRoleBinding)
+	err = r.Create(ctx, clusterRoleBinding)
 	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
 		return ctrl.Result{}, err
@@ -129,22 +129,26 @@ func validateYaml(s *spirev1.SpireServer) error {
 }
 
 func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
-	rules := rbacv1.PolicyRule{
-		Verbs:     []string{"patch", "get", "list"},
-		Resources: []string{"configmap"},
-		APIGroups: []string{""},
+	subject := rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      namespace,
+		Namespace: namespace,
 	}
 
-	clusterRole := &rbacv1.ClusterRoleBinding{
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "spire-server-configmap-role",
-			Namespace: namespace,
+			Name: "spire-server-trust-role-binding",
 		},
-		Rules: []rbacv1.PolicyRule{
-			rules,
+		Subjects: []rbacv1.Subject{
+			subject,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "v1",
+			Kind:     "ClusterRole",
+			Name:     "spire-server-trust-role",
 		},
 	}
-	return clusterRole
+	return clusterRoleBinding
 }
 
 // SetupWithManager sets up the controller with the Manager.
