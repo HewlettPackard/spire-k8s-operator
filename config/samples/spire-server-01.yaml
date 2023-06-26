@@ -1,0 +1,10 @@
+apiVersion: spire.hpe.com/v1
+kind: SpireServer
+metadata:
+  name: spire-server-01
+spec:
+  trustDomain: example.org
+  port: 8081
+  nodeAttestors: 
+    - k8s_sat
+  generatedKeyStorage: disk
