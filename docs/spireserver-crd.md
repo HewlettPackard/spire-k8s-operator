@@ -9,11 +9,10 @@ The definition can be found [here](../api/v1/spireserver_types.go).
 ## SpireServerSpec
 | Field | Required | Description |
 | ----- | -------- | ----------- |
-| `name`                | REQUIRED | The name of the SPIRE server |
 | `trustDomain`         | REQUIRED | The trust domain associated with the SPIRE server |
 | `port`                | REQUIRED | The port on which the SPIRE server Listens to agents |
 | `nodeAttestors`       | REQUIRED | The node attestor plugins the SPIRE server uses |
-| `generatedKeyStorage` | REQUIRED | Indicates whether the generated keys are stored on disk or in memory |
+| `keyStorage` | REQUIRED | Indicates whether the generated keys are stored on disk or in memory |
 
 ## SpireServerStatus
  Field | Description |
@@ -27,12 +26,12 @@ The definition can be found [here](../api/v1/spireserver_types.go).
     apiVersion: spire.hpe.com/v1
     kind: SpireServer
     metadata:
-    name: spire-server-01
+        name: spire-server-01
     spec:
-    name: spire-server-01
-    trustDomain: example.org
-    port: 8081
-    nodeAttestors: 
-        - k8s_sat
-    generatedKeyStorage: disk
+        name: spire-server-01
+        trustDomain: example.org
+        port: 8081
+        nodeAttestors: 
+            - k8s_sat
+        keyStorage: disk
     ```
