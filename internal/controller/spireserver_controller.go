@@ -18,8 +18,12 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"regexp"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -35,16 +39,9 @@ type SpireServerReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-type TruatBundelMetadata struct {
-	Name      string `yaml:"name"`
-	Namespace string `yaml:"namespace"`
-}
-
-type TrustBundle struct {
-	APIVersion string              `yaml:"apiVersion"`
-	Kind       string              `yaml:"kind"`
-	Metadata   TruatBundelMetadata `yaml:"metadata"`
-}
+var (
+	supportedNodeAttestors = []string{"k8s_psat", "k8s_sat", "join_token"}
+)
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers/status,verbs=get;update;patch
@@ -61,20 +58,73 @@ type TrustBundle struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+	logger := log.Log.WithValues("SpireServer", req.NamespacedName)
 
-	logger := log.Log.WithValues("spireServer", req.NamespacedName)
+	server := &spirev1.SpireServer{}
 
-	// TODO(user): your logic here
+	// fetching SPIRE Server instance
+	err := r.Get(ctx, req.NamespacedName, server)
+	if err != nil {
+		if apiErrors.IsNotFound(err) {
+			logger.Error(err, "SPIRE server not found.")
+			return ctrl.Result{}, nil
+		}
+
+		logger.Error(err, "Failed to get SPIRE Server instance.")
+		return ctrl.Result{}, nil
+	}
+
+	err = validateYaml(server)
+	if err != nil {
+		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
+		err = r.Delete(ctx, server)
+		return ctrl.Result{}, err
+	}
 	spireServer := &spirev1.SpireServer{}
 	bundle := r.spireBundleDeployment(spireServer, req.NamespacedName.String())
 
-	err := r.Create(ctx, bundle)
-	if err != nil {
+	errBundle := r.Create(ctx, bundle)
+	if errBundle != nil {
 		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func validateYaml(s *spirev1.SpireServer) error {
+	// trust domain takes the same form as a DNS Name
+	validDns, err := regexp.MatchString("^([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9].)+[A-Za-z]{2,}$", s.Spec.TrustDomain)
+	if err != nil {
+		return errors.New("cannot validate DNS name for trust domain")
+	} else if !validDns {
+		return errors.New("trust domain is not a valid DNS name")
+	}
+
+	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535) {
+		return errors.New("invalid port number") //TODO: should we restrict to other ports? This is basic for all ports.
+	}
+
+	var match bool
+	for _, currAttestor := range s.Spec.NodeAttestors {
+		match = false
+		for _, nodeAttestor := range supportedNodeAttestors {
+			if strings.Compare(currAttestor, nodeAttestor) == 0 {
+				match = true
+				break
+			}
+		}
+	}
+
+	if !match {
+		return errors.New("incorrect node attestors list inputted: at least one of the specified node attestors is not supported")
+	}
+
+	if !((strings.Compare("disk", strings.ToLower(s.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.KeyStorage)) == 0)) {
+		return errors.New("generated key storage is only supported on disk or in memory")
+	}
+
+	return nil
 }
 
 func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, namespace string) *corev1.ConfigMap {
