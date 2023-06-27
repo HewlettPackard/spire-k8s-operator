@@ -35,7 +35,7 @@ spec:
           spec:
             description: SpireServerSpec defines the desired state of SpireServer
             properties:
-              generatedKeyStorage:
+              keyStorage:
                 type: string
               nodeAttestors:
                 items:
@@ -49,6 +49,7 @@ spec:
                 type: string
             required:
             - generatedKeyStorage
+            - name
             - nodeAttestors
             - port
             - trustDomain

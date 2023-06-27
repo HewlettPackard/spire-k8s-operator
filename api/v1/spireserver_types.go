@@ -36,7 +36,7 @@ type SpireServerSpec struct {
 	// ServerDataPath string `json:"serverDataPath"` unsure how this would be validated so omitted for now
 	// default datastore is sqlite so no config for that
 
-	GeneratedKeyStorage string `json:"generatedKeyStorage"`
+	KeyStorage string `json:"keyStorage"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer
