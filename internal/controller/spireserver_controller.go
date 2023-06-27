@@ -78,30 +78,22 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	err = validateYaml(spireserver)
-	if err != nil {
+	errValidateYaml := validateYaml(spireserver)
+	if errValidateYaml != nil {
 		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
 		err = r.Delete(ctx, spireserver)
 		return ctrl.Result{}, err
 	}
 
-	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.NamespacedName.String())
-
-	err = r.Create(ctx, clusterRoles)
-	if err != nil {
+	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.NamespacedName.String())\
+	errClusterRoles := r.Create(ctx, clusterRoles)
+	if errClusterRoles != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
 		return ctrl.Result{}, err
 	}
-	clusterRoles := r.spireRoleDeployment(server, req.NamespacedName.String())
 
-	errRoles := r.Create(ctx, clusterRoles)
-	if errRoles != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
-		return ctrl.Result{}, err
-	}
-	clusterRoles := r.spireRoleDeployment(server, req.NamespacedName.String())
-
-	errRoles := r.Create(ctx, clusterRoles)
+	roles := r.spireRoleDeployment(spireserver, req.NamespacedName.String())
+	errRoles := r.Create(ctx, roles)
 	if errRoles != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
 		return ctrl.Result{}, err
