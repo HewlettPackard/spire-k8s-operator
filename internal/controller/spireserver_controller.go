@@ -110,7 +110,7 @@ func validateYaml(s *spirev1.SpireServer) error {
 		return errors.New("incorrect node attestors list inputted: at least one of the specified node attestors is not supported")
 	}
 
-	if !((strings.Compare("disk", strings.ToLower(s.Spec.GeneratedKeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.GeneratedKeyStorage)) == 0)) {
+	if !((strings.Compare("disk", strings.ToLower(s.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.KeyStorage)) == 0)) {
 		return errors.New("generated key storage is only supported on disk or in memory")
 	}
 
