@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- spire_v1_spireserver.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples
