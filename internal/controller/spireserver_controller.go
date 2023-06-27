@@ -85,9 +85,8 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	roleBinding := r.spireRoleBindingDeployment(spireserver, req.NamespacedName.String())
-
-	err = r.Create(ctx, roleBinding)
-	if err != nil {
+	errRoleBinding := r.Create(ctx, roleBinding)
+	if errRoleBinding != nil {
 		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
 		return ctrl.Result{}, err
 	}
