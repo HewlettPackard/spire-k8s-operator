@@ -78,7 +78,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	err = validateYaml(spireserver)
 	if err != nil {
 		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
-		err = r.Delete(ctx, spireserver)
+		err = r.Delete(ctx, spirespireServer)
 		return ctrl.Result{}, err
 	}
 
@@ -100,6 +100,14 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	errRoles := r.Create(ctx, roles)
 	if errRoles != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
+		return ctrl.Result{}, err
+	}
+
+	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireServer, req.NamespacedName.String())
+
+	err = r.Create(ctx, clusterRoleBinding)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
 		return ctrl.Result{}, err
 	}
 
@@ -139,6 +147,29 @@ func validateYaml(s *spirev1.SpireServer) error {
 	}
 
 	return nil
+}
+
+func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
+	subject := rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      namespace,
+		Namespace: namespace,
+	}
+
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-server-trust-role-binding",
+		},
+		Subjects: []rbacv1.Subject{
+			subject,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "v1",
+			Kind:     "ClusterRole",
+			Name:     "spire-server-trust-role",
+		},
+	}
+	return clusterRoleBinding
 }
 
 func (r *SpireServerReconciler) spireRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.RoleBinding {
