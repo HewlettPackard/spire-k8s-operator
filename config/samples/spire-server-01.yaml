@@ -7,5 +7,4 @@ spec:
   port: 8081
   nodeAttestors: 
     - k8s_sat
-    - join_token
   keyStorage: disk
