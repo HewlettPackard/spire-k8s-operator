@@ -84,6 +84,10 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	fmt.Println("namespace: " + req.Namespace)
+	fmt.Println("namespaced name: " + req.NamespacedName.String())
+	fmt.Println("namespace: " + req.NamespacedName.Namespace)
+
 	serverConfigMap := r.spireConfigMapDeployment(server, req.Namespace)
 	err = r.Create(ctx, serverConfigMap)
 
@@ -137,6 +141,7 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 	for _, nodeAttestor := range s.Spec.NodeAttestors {
 		if strings.Compare(nodeAttestor, "join_token") == 0 {
 			nodeAttestorsConfig += `
+
 	NodeAttestor "join_token" {
 		plugin_data {
 
@@ -144,18 +149,20 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 	}`
 		} else if strings.Compare(nodeAttestor, "k8s_sat") == 0 {
 			nodeAttestorsConfig += `
+
 	NodeAttestor "k8s_sat" {
 		plugin_data {
 			clusters = {
 				"demo-cluster" = {
 					use_token_review_api_validation = true
 					service_account_allow_list = ["spire:spire-agent"]
-				  }
+				}
 			}
 		}
 	}`
 		} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
 			nodeAttestorsConfig += `
+
 	NodeAttestor "k8s_psat" {
 		plugin_data {
 			clusters = {
@@ -188,10 +195,11 @@ server {
 plugins {
 	DataStore "sql" {
 		plugin_data {
-		database_type = "sqlite3"
-		connection_string = "/run/spire/data/datastore.sqlite3"
+		  database_type = "sqlite3"
+		  connection_string = "/run/spire/data/datastore.sqlite3"
 		}
-	}` + nodeAttestorsConfig + `
+	}` +
+		nodeAttestorsConfig + `
 
 	KeyManager "` + s.Spec.KeyStorage + `" {
 		plugin_data {
@@ -201,7 +209,6 @@ plugins {
 
 	Notifier "k8sbundle" {
 		plugin_data {
-
 		}
 	}
 }
