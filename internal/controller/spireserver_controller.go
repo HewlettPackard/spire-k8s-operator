@@ -81,7 +81,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 	spireServer := &spirev1.SpireServer{}
-	bundle := r.spireBundleDeployment(spireServer, req.NamespacedName.String())
+	bundle := r.spireBundleDeployment(spireServer, req.Namespace)
 
 	errBundle := r.Create(ctx, bundle)
 	if errBundle != nil {
