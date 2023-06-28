@@ -25,5 +25,7 @@ Dockerfile.cross
 *.swo
 *~
 
+
 .DS_Store
 *.sh
+.github
