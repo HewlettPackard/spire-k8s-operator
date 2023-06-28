@@ -19,8 +19,13 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,7 +43,7 @@ type SpireServerReconciler struct {
 }
 
 var (
-	supportedNodeAttestors = []string{"k8s_sat"}
+	supportedNodeAttestors = []string{"k8s_sat", "join_token"}
 )
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
@@ -79,14 +84,19 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	serverConfigMap := r.spireConfigMapDeployment(server, req.Namespace)
+	err = r.Create(ctx, serverConfigMap)
+
+	if err != nil {
+		logger.Error(err, "Failed to create ConfigMap.")
+		err = r.Delete(ctx, server)
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
-	if len(s.Spec.Name) == 0 {
-		return errors.New("SPIRE Server name is empty")
-	}
-
 	// trust domain takes the same form as a DNS Name
 	validDns, err := regexp.MatchString("^([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9].)+[A-Za-z]{2,}$", s.Spec.TrustDomain)
 	if err != nil {
@@ -114,11 +124,115 @@ func validateYaml(s *spirev1.SpireServer) error {
 		return errors.New("incorrect node attestors list inputted: at least one of the specified node attestors is not supported")
 	}
 
-	if !((strings.Compare("disk", strings.ToLower(s.Spec.GeneratedKeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.GeneratedKeyStorage)) == 0)) {
+	if !((strings.Compare("disk", strings.ToLower(s.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.KeyStorage)) == 0)) {
 		return errors.New("generated key storage is only supported on disk or in memory")
 	}
 
 	return nil
+}
+
+func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer, namespace string) *corev1.ConfigMap {
+	nodeAttestorsConfig := ""
+
+	for _, nodeAttestor := range s.Spec.NodeAttestors {
+		if strings.Compare(nodeAttestor, "join_token") == 0 {
+			nodeAttestorsConfig += `
+	NodeAttestor "join_token" {
+		plugin_data {
+
+		}
+	}`
+		} else if strings.Compare(nodeAttestor, "k8s_sat") == 0 {
+			nodeAttestorsConfig += `
+	NodeAttestor "k8s_sat" {
+		plugin_data {
+			clusters = {
+				"demo-cluster" = {
+					use_token_review_api_validation = true
+					service_account_allow_list = ["spire:spire-agent"]
+				  }
+			}
+		}
+	}`
+		} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
+			nodeAttestorsConfig += `
+	NodeAttestor "k8s_psat" {
+		plugin_data {
+			clusters = {
+				"cluster" = {
+					service_account_allow_list = ["` + namespace + `:spire-agent"]
+				}
+			}
+		}
+	}`
+		}
+	}
+
+	config := `
+server {
+	bind_address = "0.0.0.0"
+	bind_port = "` + strconv.Itoa(s.Spec.Port) + `"
+	socket_path = "/tmp/spire-server/private/api.sock"
+	trust_domain = "` + s.Spec.TrustDomain + `"
+	data_dir = "/run/spire/data"
+	log_level = "DEBUG"
+	ca_key_type = "rsa-2048"
+
+	ca_subject = {
+		country = ["US"],
+		organization = ["SPIFFE"],
+		common_name = "",
+	}
+}
+
+plugins {
+	DataStore "sql" {
+		plugin_data {
+		database_type = "sqlite3"
+		connection_string = "/run/spire/data/datastore.sqlite3"
+		}
+	}` + nodeAttestorsConfig + `
+
+	KeyManager "` + s.Spec.KeyStorage + `" {
+		plugin_data {
+			keys_path = "/run/spire/data/keys.json"
+		}
+	}
+
+	Notifier "k8sbundle" {
+		plugin_data {
+
+		}
+	}
+}
+
+health_checks {
+	listener_enabled = true
+	bind_address = "0.0.0.0"
+	bind_port = "8080"
+	live_path = "/live"
+	ready_path = "/ready"
+}`
+
+	configMap := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-config-map",
+			Namespace: namespace,
+		},
+
+		Data: map[string]string{
+			"server.conf": config,
+		},
+	}
+
+	fmt.Println(config)
+
+	return configMap
 }
 
 // SetupWithManager sets up the controller with the Manager.
