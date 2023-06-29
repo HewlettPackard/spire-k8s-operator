@@ -29,3 +29,4 @@ Dockerfile.cross
 
 .DS_Store
 *.sh
+.github
