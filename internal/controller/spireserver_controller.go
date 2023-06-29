@@ -211,7 +211,7 @@ plugins {
 
 	Notifier "k8sbundle" {
 		plugin_data {
-			` + namespace + `
+			namespace = "` + namespace + `"
 		}
 	}
 }
