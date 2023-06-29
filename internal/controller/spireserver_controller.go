@@ -92,6 +92,13 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	spireService := r.spireServiceDeployment(server, req.Namespace)
+	err = r.Create(ctx, spireService)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", spireService.Namespace, "Name", spireService.Name)
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -234,6 +241,26 @@ health_checks {
 	}
 
 	return configMap
+}
+
+func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, namespace string) *corev1.Service {
+	// need to pass in the user desired specs like port type,ports,selectors here
+	serviceSpec := corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{{Port: int32(m.Spec.Port)}},
+	}
+	spireService := &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-service",
+			Namespace: namespace,
+		},
+		Spec: serviceSpec,
+	}
+
+	return spireService
 }
 
 // SetupWithManager sets up the controller with the Manager.
