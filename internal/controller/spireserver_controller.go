@@ -22,7 +22,9 @@ import (
 	"regexp"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -79,6 +81,14 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	spireServer := &spirev1.SpireServer{}
+	serviceAccount := r.createServiceAccount(spireServer, req.Namespace)
+	errServiceAccount := r.Create(ctx, serviceAccount)
+	if errServiceAccount != nil {
+		logger.Error(errServiceAccount, "Failed to create", "Namespace", serviceAccount.Namespace, "Name", serviceAccount.Name)
+		return ctrl.Result{}, errServiceAccount
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -122,4 +132,19 @@ func (r *SpireServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&spirev1.SpireServer{}).
 		Complete(r)
+}
+
+// CreateServiceAccount creates a service account for the SPIRE server.
+func (r *SpireServerReconciler) createServiceAccount(m *spirev1.SpireServer, namespace string) *corev1.ServiceAccount {
+	serviceAccount := &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-service-account",
+			Namespace: namespace,
+		},
+	}
+	return serviceAccount
 }
