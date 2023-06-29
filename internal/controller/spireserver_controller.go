@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -83,10 +82,6 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		err = r.Delete(ctx, server)
 		return ctrl.Result{}, err
 	}
-
-	fmt.Println("namespace: " + req.Namespace)
-	fmt.Println("namespaced name: " + req.NamespacedName.String())
-	fmt.Println("namespace: " + req.NamespacedName.Namespace)
 
 	serverConfigMap := r.spireConfigMapDeployment(server, req.Namespace)
 	err = r.Create(ctx, serverConfigMap)
@@ -237,8 +232,6 @@ health_checks {
 			"server.conf": config,
 		},
 	}
-
-	fmt.Println(config)
 
 	return configMap
 }
