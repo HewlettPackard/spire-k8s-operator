@@ -82,31 +82,31 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.NamespacedName.String())
-	errClusterRoleBinding := r.Create(ctx, clusterRoleBinding)
-	if errClusterRoleBinding != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
-		return ctrl.Result{}, err
-	}
-
-	roleBinding := r.spireRoleBindingDeployment(spireserver, req.NamespacedName.String())
-	errRoleBinding := r.Create(ctx, roleBinding)
-	if errRoleBinding != nil {
-		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
-		return ctrl.Result{}, err
-	}
-
-	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.NamespacedName.String())
+	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Name)
 	errClusterRoles := r.Create(ctx, clusterRoles)
 	if errClusterRoles != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
 		return ctrl.Result{}, err
 	}
 
-	roles := r.spireRoleDeployment(spireserver, req.NamespacedName.String())
+	roles := r.spireRoleDeployment(spireserver, req.Name)
 	errRoles := r.Create(ctx, roles)
 	if errRoles != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
+		return ctrl.Result{}, err
+	}
+
+	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Name)
+	errClusterRoleBinding := r.Create(ctx, clusterRoleBinding)
+	if errClusterRoleBinding != nil {
+		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
+		return ctrl.Result{}, err
+	}
+
+	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Name)
+	errRoleBinding := r.Create(ctx, roleBinding)
+	if errRoleBinding != nil {
+		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
 		return ctrl.Result{}, err
 	}
 
@@ -151,7 +151,7 @@ func validateYaml(s *spirev1.SpireServer) error {
 func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
 	subject := rbacv1.Subject{
 		Kind:      "ServiceAccount",
-		Name:      namespace,
+		Name:      "spire-server",
 		Namespace: namespace,
 	}
 
@@ -163,7 +163,7 @@ func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.Spi
 			subject,
 		},
 		RoleRef: rbacv1.RoleRef{
-			APIGroup: "v1",
+			APIGroup: "spire.hpe.com/v1",
 			Kind:     "ClusterRole",
 			Name:     "spire-server-trust-role",
 		},
@@ -174,7 +174,7 @@ func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.Spi
 func (r *SpireServerReconciler) spireRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.RoleBinding {
 	subject := rbacv1.Subject{
 		Kind:      "ServiceAccount",
-		Name:      namespace,
+		Name:      "spire-server",
 		Namespace: namespace,
 	}
 
@@ -223,8 +223,7 @@ func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, name
 
 	clusterRole := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "spire-server-configmap-role",
-			Namespace: namespace,
+			Name: "spire-server-configmap-role",
 		},
 		Rules: []rbacv1.PolicyRule{
 			rules,
