@@ -70,7 +70,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			logger.Error(err, "SPIRE server not found.")
 			return ctrl.Result{}, nil
 		}
-
+    
 		logger.Error(err, "Failed to get SPIRE Server instance.")
 		return ctrl.Result{}, nil
 	}
