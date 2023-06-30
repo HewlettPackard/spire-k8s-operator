@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -91,7 +90,6 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
 		return ctrl.Result{}, err
 	}
-	fmt.Println("BUNDLE CREATED")
 
 	roles := r.spireRoleDeployment(spireserver, req.Namespace)
 	err = r.Create(ctx, roles)
