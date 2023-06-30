@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -60,6 +61,7 @@ var (
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+
 	logger := log.Log.WithValues("SpireServer", req.NamespacedName)
 
 	spireserver := &spirev1.SpireServer{}
@@ -83,38 +85,39 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Name)
-	err = r.Create(ctx, clusterRoles)
+	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, bundle)
 	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
+		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
 		return ctrl.Result{}, err
 	}
+	fmt.Println("BUNDLE CREATED")
 
-	roles := r.spireRoleDeployment(spireserver, req.Name)
+	roles := r.spireRoleDeployment(spireserver, req.Namespace)
 	err = r.Create(ctx, roles)
 	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
+		logger.Error(err, "Failed to create", "Namespace", roles.Namespace, "Name", roles.Name)
 		return ctrl.Result{}, err
 	}
 
-	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Name)
-	err = r.Create(ctx, clusterRoleBinding)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
-		return ctrl.Result{}, err
-	}
-
-	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Name)
+	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Namespace)
 	err = r.Create(ctx, roleBinding)
 	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
 		return ctrl.Result{}, err
 	}
 
-	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, bundle)
+	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, clusterRoles)
 	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
+		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
+		return ctrl.Result{}, err
+	}
+
+	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, clusterRoleBinding)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
 		return ctrl.Result{}, err
 	}
 
@@ -171,6 +174,10 @@ func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.Spi
 	}
 
 	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "spire-server-trust-role-binding",
 		},
@@ -178,7 +185,7 @@ func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.Spi
 			subject,
 		},
 		RoleRef: rbacv1.RoleRef{
-			APIGroup: "spire.hpe.com/v1",
+			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
 			Name:     "spire-server-trust-role",
 		},
@@ -194,6 +201,10 @@ func (r *SpireServerReconciler) spireRoleBindingDeployment(m *spirev1.SpireServe
 	}
 
 	roleBinding := &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "spire-server-configmap-role-binding",
 			Namespace: namespace,
@@ -202,7 +213,7 @@ func (r *SpireServerReconciler) spireRoleBindingDeployment(m *spirev1.SpireServe
 			subject,
 		},
 		RoleRef: rbacv1.RoleRef{
-			APIGroup: "v1",
+			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
 			Name:     "spire-server-configmap-role",
 		},
@@ -219,6 +230,10 @@ func (r *SpireServerReconciler) spireClusterRoleDeployment(m *spirev1.SpireServe
 	}
 
 	clusterRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "spire-server-trust-role",
 		},
@@ -237,8 +252,13 @@ func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, name
 	}
 
 	clusterRole := &rbacv1.Role{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Role",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "spire-server-configmap-role",
+			Name:      "spire-server-configmap-role",
+			Namespace: namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
 			rules,
