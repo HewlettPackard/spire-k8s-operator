@@ -22,9 +22,7 @@ import (
 	"regexp"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -81,12 +79,11 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	spireServer := &spirev1.SpireServer{}
-	serviceAccount := r.createServiceAccount(spireServer, req.Namespace)
-	errServiceAccount := r.Create(ctx, serviceAccount)
-	if errServiceAccount != nil {
-		logger.Error(errServiceAccount, "Failed to create", "Namespace", serviceAccount.Namespace, "Name", serviceAccount.Name)
-		return ctrl.Result{}, errServiceAccount
+	serviceAccount := r.createServiceAccount(server, req.Namespace)
+	err := r.Create(ctx, serviceAccount)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", serviceAccount.Namespace, "Name", serviceAccount.Name)
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
