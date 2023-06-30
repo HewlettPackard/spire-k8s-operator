@@ -84,36 +84,36 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Name)
-	errClusterRoles := r.Create(ctx, clusterRoles)
-	if errClusterRoles != nil {
+	err = r.Create(ctx, clusterRoles)
+	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
 		return ctrl.Result{}, err
 	}
 
 	roles := r.spireRoleDeployment(spireserver, req.Name)
-	errRoles := r.Create(ctx, roles)
-	if errRoles != nil {
+	err = r.Create(ctx, roles)
+	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
 		return ctrl.Result{}, err
 	}
 
 	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Name)
-	errClusterRoleBinding := r.Create(ctx, clusterRoleBinding)
-	if errClusterRoleBinding != nil {
+	err = r.Create(ctx, clusterRoleBinding)
+	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
 		return ctrl.Result{}, err
 	}
 
 	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Name)
-	errRoleBinding := r.Create(ctx, roleBinding)
-	if errRoleBinding != nil {
+	err = r.Create(ctx, roleBinding)
+	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
 		return ctrl.Result{}, err
 	}
-	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
 
-	errBundle := r.Create(ctx, bundle)
-	if errBundle != nil {
+	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, bundle)
+	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
 		return ctrl.Result{}, err
 	}
