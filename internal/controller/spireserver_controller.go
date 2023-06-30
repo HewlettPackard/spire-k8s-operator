@@ -24,7 +24,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+  
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -81,6 +81,14 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		err = r.Delete(ctx, server)
 		return ctrl.Result{}, err
 	}
+	spireServer := &spirev1.SpireServer{}
+	bundle := r.spireBundleDeployment(spireServer, req.Namespace)
+
+	errBundle := r.Create(ctx, bundle)
+	if errBundle != nil {
+		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
+		return ctrl.Result{}, err
+	}
 
 	spireService := r.spireServiceDeployment(server, req.Namespace)
 	err = r.Create(ctx, spireService)
@@ -127,6 +135,21 @@ func validateYaml(s *spirev1.SpireServer) error {
 	return nil
 }
 
+func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, namespace string) *corev1.ConfigMap {
+	bundle := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-bundle",
+			Namespace: namespace,
+		},
+	}
+
+	return bundle
+}
+
 func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, namespace string) *corev1.Service {
 	// need to pass in the user desired specs like port type,ports,selectors here
 	serviceSpec := corev1.ServiceSpec{
@@ -143,7 +166,6 @@ func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, n
 		},
 		Spec: serviceSpec,
 	}
-
 	return spireService
 }
 
