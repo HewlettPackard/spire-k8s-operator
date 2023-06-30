@@ -22,10 +22,10 @@ import (
 	"regexp"
 	"strings"
 
-	rbacv1 "k8s.io/api/rbac/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-  
+
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -71,7 +71,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			logger.Error(err, "SPIRE server not found.")
 			return ctrl.Result{}, nil
 		}
-    
+
 		logger.Error(err, "Failed to get SPIRE Server instance.")
 		return ctrl.Result{}, nil
 	}
@@ -110,8 +110,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
 		return ctrl.Result{}, err
 	}
-	spireServer := &spirev1.SpireServer{}
-	bundle := r.spireBundleDeployment(spireServer, req.Namespace)
+	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
 
 	errBundle := r.Create(ctx, bundle)
 	if errBundle != nil {
@@ -119,7 +118,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	spireService := r.spireServiceDeployment(server, req.Namespace)
+	spireService := r.spireServiceDeployment(spireserver, req.Namespace)
 	err = r.Create(ctx, spireService)
 	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", spireService.Namespace, "Name", spireService.Name)
