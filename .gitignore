@@ -29,9 +29,4 @@ Dockerfile.cross
 *.sh
 
 # files for testing
-server-account.yaml
-server-cluster-role.yaml
-server-configmap.yaml
-server-service.yaml
-server-statefulset.yaml
-spire-bundle-configmap.yaml
+testing-yamls/

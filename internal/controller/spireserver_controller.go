@@ -42,7 +42,7 @@ type SpireServerReconciler struct {
 }
 
 var (
-	supportedNodeAttestors = []string{"k8s_sat", "join_token"}
+	supportedNodeAttestors = []string{"k8s_psat", "k8s_sat", "join_token"}
 )
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
