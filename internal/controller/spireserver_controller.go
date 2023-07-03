@@ -23,8 +23,9 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-  
+
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -59,38 +60,66 @@ var (
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+
 	logger := log.Log.WithValues("SpireServer", req.NamespacedName)
 
-	server := &spirev1.SpireServer{}
+	spireserver := &spirev1.SpireServer{}
 
 	// fetching SPIRE Server instance
-	err := r.Get(ctx, req.NamespacedName, server)
+	err := r.Get(ctx, req.NamespacedName, spireserver)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
 			logger.Error(err, "SPIRE server not found.")
 			return ctrl.Result{}, nil
 		}
-    
+
 		logger.Error(err, "Failed to get SPIRE Server instance.")
 		return ctrl.Result{}, nil
 	}
 
-	err = validateYaml(server)
+	err = validateYaml(spireserver)
 	if err != nil {
 		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
-		err = r.Delete(ctx, server)
+		err = r.Delete(ctx, spireserver)
 		return ctrl.Result{}, err
 	}
-	spireServer := &spirev1.SpireServer{}
-	bundle := r.spireBundleDeployment(spireServer, req.Namespace)
 
-	errBundle := r.Create(ctx, bundle)
-	if errBundle != nil {
+	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, bundle)
+	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
 		return ctrl.Result{}, err
 	}
 
-	spireService := r.spireServiceDeployment(server, req.Namespace)
+	roles := r.spireRoleDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, roles)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", roles.Namespace, "Name", roles.Name)
+		return ctrl.Result{}, err
+	}
+
+	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, roleBinding)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
+		return ctrl.Result{}, err
+	}
+
+	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, clusterRoles)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
+		return ctrl.Result{}, err
+	}
+
+	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, clusterRoleBinding)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
+		return ctrl.Result{}, err
+	}
+
+	spireService := r.spireServiceDeployment(spireserver, req.Namespace)
 	err = r.Create(ctx, spireService)
 	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", spireService.Namespace, "Name", spireService.Name)
@@ -135,6 +164,107 @@ func validateYaml(s *spirev1.SpireServer) error {
 	return nil
 }
 
+func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
+	subject := rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "spire-server",
+		Namespace: namespace,
+	}
+
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-server-trust-role-binding",
+		},
+		Subjects: []rbacv1.Subject{
+			subject,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "spire-server-trust-role",
+		},
+	}
+	return clusterRoleBinding
+}
+
+func (r *SpireServerReconciler) spireRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.RoleBinding {
+	subject := rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "spire-server",
+		Namespace: namespace,
+	}
+
+	roleBinding := &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-server-configmap-role-binding",
+			Namespace: namespace,
+		},
+		Subjects: []rbacv1.Subject{
+			subject,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     "spire-server-configmap-role",
+		},
+	}
+	return roleBinding
+
+}
+
+func (r *SpireServerReconciler) spireClusterRoleDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRole {
+	rules := rbacv1.PolicyRule{
+		Verbs:     []string{"create"},
+		Resources: []string{"tokenreviews"},
+		APIGroups: []string{"authentication.k8s.io"},
+	}
+
+	clusterRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-server-trust-role",
+		},
+		Rules: []rbacv1.PolicyRule{
+			rules,
+		},
+	}
+	return clusterRole
+}
+
+func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.Role {
+	rules := rbacv1.PolicyRule{
+		Verbs:     []string{"patch", "get", "list"},
+		Resources: []string{"configmaps"},
+		APIGroups: []string{""},
+	}
+
+	serverRole := &rbacv1.Role{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Role",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-server-configmap-role",
+			Namespace: namespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			rules,
+		},
+	}
+	return serverRole
+}
+
 func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, namespace string) *corev1.ConfigMap {
 	bundle := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -146,7 +276,6 @@ func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, na
 			Namespace: namespace,
 		},
 	}
-
 	return bundle
 }
 
