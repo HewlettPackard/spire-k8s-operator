@@ -22,6 +22,9 @@ import (
 	"regexp"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -67,7 +70,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			logger.Error(err, "SPIRE server not found.")
 			return ctrl.Result{}, nil
 		}
-
+    
 		logger.Error(err, "Failed to get SPIRE Server instance.")
 		return ctrl.Result{}, nil
 	}
@@ -76,6 +79,21 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if err != nil {
 		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
 		err = r.Delete(ctx, server)
+		return ctrl.Result{}, err
+	}
+	spireServer := &spirev1.SpireServer{}
+	bundle := r.spireBundleDeployment(spireServer, req.Namespace)
+
+	errBundle := r.Create(ctx, bundle)
+	if errBundle != nil {
+		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
+		return ctrl.Result{}, err
+	}
+
+	spireService := r.spireServiceDeployment(server, req.Namespace)
+	err = r.Create(ctx, spireService)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", spireService.Namespace, "Name", spireService.Name)
 		return ctrl.Result{}, err
 	}
 
@@ -122,6 +140,40 @@ func validateYaml(s *spirev1.SpireServer) error {
 	}
 
 	return nil
+}
+
+func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, namespace string) *corev1.ConfigMap {
+	bundle := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-bundle",
+			Namespace: namespace,
+		},
+	}
+
+	return bundle
+}
+
+func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, namespace string) *corev1.Service {
+	// need to pass in the user desired specs like port type,ports,selectors here
+	serviceSpec := corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{{Port: int32(m.Spec.Port)}},
+	}
+	spireService := &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-service",
+			Namespace: namespace,
+		},
+		Spec: serviceSpec,
+	}
+	return spireService
 }
 
 // SetupWithManager sets up the controller with the Manager.
