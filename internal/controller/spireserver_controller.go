@@ -245,7 +245,7 @@ func (r *SpireServerReconciler) spireClusterRoleDeployment(m *spirev1.SpireServe
 func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.Role {
 	rules := rbacv1.PolicyRule{
 		Verbs:     []string{"patch", "get", "list"},
-		Resources: []string{"configmap"},
+		Resources: []string{"configmaps"},
 		APIGroups: []string{""},
 	}
 
