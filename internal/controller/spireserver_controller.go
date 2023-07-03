@@ -314,13 +314,6 @@ func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, n
 	return spireService
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *SpireServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&spirev1.SpireServer{}).
-		Complete(r)
-}
-
 // CreateServiceAccount creates a service account for the SPIRE server.
 func (r *SpireServerReconciler) createServiceAccount(m *spirev1.SpireServer, namespace string) *corev1.ServiceAccount {
 	serviceAccount := &corev1.ServiceAccount{
@@ -440,4 +433,11 @@ health_checks {
 	}
 
 	return configMap
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *SpireServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&spirev1.SpireServer{}).
+		Complete(r)
 }
