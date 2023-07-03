@@ -84,6 +84,13 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	serviceAccount := r.createServiceAccount(spireserver, req.Namespace)
+	err = r.Create(ctx, serviceAccount)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", serviceAccount.Namespace, "Name", serviceAccount.Name)
+		return ctrl.Result{}, err
+	}
+
 	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
 	err = r.Create(ctx, bundle)
 	if err != nil {
@@ -123,13 +130,6 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	err = r.Create(ctx, spireService)
 	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", spireService.Namespace, "Name", spireService.Name)
-		return ctrl.Result{}, err
-	}
-
-	serviceAccount := r.createServiceAccount(server, req.Namespace)
-	err := r.Create(ctx, serviceAccount)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", serviceAccount.Namespace, "Name", serviceAccount.Name)
 		return ctrl.Result{}, err
 	}
 
@@ -320,7 +320,7 @@ func (r *SpireServerReconciler) createServiceAccount(m *spirev1.SpireServer, nam
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "spire-service-account",
+			Name:      "spire-server",
 			Namespace: namespace,
 		},
 	}
