@@ -249,7 +249,7 @@ func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, name
 		APIGroups: []string{""},
 	}
 
-	clusterRole := &rbacv1.Role{
+	serverRole := &rbacv1.Role{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Role",
 			APIVersion: "rbac.authorization.k8s.io/v1",
@@ -262,7 +262,7 @@ func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, name
 			rules,
 		},
 	}
-	return clusterRole
+	return serverRole
 }
 
 func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, namespace string) *corev1.ConfigMap {
