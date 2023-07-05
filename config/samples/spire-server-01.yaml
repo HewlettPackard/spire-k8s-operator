@@ -8,3 +8,4 @@ spec:
   nodeAttestors: 
     - k8s_sat
   keyStorage: disk
+  replicas: 1

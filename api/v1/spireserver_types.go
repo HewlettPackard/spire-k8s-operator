@@ -37,6 +37,8 @@ type SpireServerSpec struct {
 	// default datastore is sqlite so no config for that
 
 	KeyStorage string `json:"keyStorage"`
+
+	Replicas int `json:"replicas"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer

@@ -23,9 +23,12 @@ import (
 	"strconv"
 	"strings"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -92,14 +95,6 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	serverConfigMap := r.spireConfigMapDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, serverConfigMap)
-	if err != nil {
-		logger.Error(err, "Failed to create ConfigMap.")
-		err = r.Delete(ctx, spireserver)
-		return ctrl.Result{}, err
-	}
-
 	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
 	err = r.Create(ctx, bundle)
 	if err != nil {
@@ -132,6 +127,21 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	err = r.Create(ctx, clusterRoleBinding)
 	if err != nil {
 		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
+		return ctrl.Result{}, err
+	}
+
+	serverConfigMap := r.spireConfigMapDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, serverConfigMap)
+	if err != nil {
+		logger.Error(err, "Failed to create ConfigMap.")
+		err = r.Delete(ctx, spireserver)
+		return ctrl.Result{}, err
+	}
+
+	spireStatefulSet := r.spireStatefulSetDeployment(spireserver, req.Namespace)
+	err = r.Create(ctx, spireStatefulSet)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", spireStatefulSet.Namespace, "Name", spireStatefulSet.Name)
 		return ctrl.Result{}, err
 	}
 
@@ -175,6 +185,10 @@ func validateYaml(s *spirev1.SpireServer) error {
 
 	if !((strings.Compare("disk", strings.ToLower(s.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.KeyStorage)) == 0)) {
 		return errors.New("generated key storage is only supported on disk or in memory")
+	}
+
+	if s.Spec.Replicas <= 0 {
+		return errors.New("at least one replica needs to exist")
 	}
 
 	return nil
@@ -293,6 +307,98 @@ func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, na
 		},
 	}
 	return bundle
+}
+
+func (r *SpireServerReconciler) spireStatefulSetDeployment(m *spirev1.SpireServer, namespace string) *appsv1.StatefulSet {
+	// need to pass in the user desired specs like number of replicas, desired Vols to be mounted, probings,etc.. here
+	var numReplicas int32 = int32(m.Spec.Replicas)
+	labelSelector := metav1.LabelSelector{MatchLabels: map[string]string{"app": "spire-server"}}
+	volMount1 := corev1.VolumeMount{
+		Name:      "spire-config",
+		MountPath: "/run/spire/config",
+		ReadOnly:  true,
+	}
+	volMount2 := corev1.VolumeMount{
+		Name:      "spire-data",
+		MountPath: "/run/spire/data",
+		ReadOnly:  false,
+	}
+	livenessProbe := corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{
+			Path: "/live", Port: intstr.IntOrString{IntVal: 8080}}},
+		FailureThreshold:    2,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       60,
+		TimeoutSeconds:      3,
+	}
+	readinessProbe := corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{
+			Path: "/ready", Port: intstr.IntOrString{IntVal: 8080}}},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+	}
+	podVolume := corev1.Volume{
+		Name: "spire-config",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "spire-config-map"},
+			},
+		},
+	}
+	containerSpec := corev1.Container{
+		Name:           "spire-server",
+		Image:          "ghcr.io/spiffe/spire-server:1.5.1",
+		Args:           []string{"-config", "/run/spire/config/server.conf"},
+		Ports:          []corev1.ContainerPort{{ContainerPort: 8081}},
+		VolumeMounts:   []corev1.VolumeMount{volMount1, volMount2},
+		LivenessProbe:  &livenessProbe,
+		ReadinessProbe: &readinessProbe,
+	}
+	podSpec := corev1.PodSpec{
+		ServiceAccountName: "spire-server",
+		Containers:         []corev1.Container{containerSpec},
+		Volumes:            []corev1.Volume{podVolume},
+	}
+
+	volClaimTemplate := corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-data",
+			Namespace: namespace,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{
+				Requests: map[corev1.ResourceName]resource.Quantity{
+					corev1.ResourceStorage: resource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+	statefulSetSpec := appsv1.StatefulSetSpec{
+		Replicas: &numReplicas,
+		Selector: &labelSelector,
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Labels:    map[string]string{"app": "spire-server"},
+			},
+			Spec: podSpec,
+		},
+		VolumeClaimTemplates: []corev1.PersistentVolumeClaim{volClaimTemplate},
+	}
+	spireStatefulSet := &appsv1.StatefulSet{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "StatefulSet",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-server",
+			Namespace: namespace,
+			Labels:    map[string]string{"app": "spire-server"},
+		},
+		Spec: statefulSetSpec,
+	}
+	return spireStatefulSet
 }
 
 func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, namespace string) *corev1.Service {

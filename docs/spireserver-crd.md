@@ -13,6 +13,7 @@ The definition can be found [here](../api/v1/spireserver_types.go).
 | `port`                | REQUIRED | The port on which the SPIRE server Listens to agents |
 | `nodeAttestors`       | REQUIRED | The node attestor plugins the SPIRE server uses |
 | `keyStorage` | REQUIRED | Indicates whether the generated keys are stored on disk or in memory |
+| `replicas` | REQUIRED | Number of replicas for SPIRE server |
 
 ## SpireServerStatus
  Field | Description |
@@ -34,4 +35,5 @@ The definition can be found [here](../api/v1/spireserver_types.go).
         nodeAttestors: 
             - k8s_sat
         keyStorage: disk
+        replicas: 1
     ```
