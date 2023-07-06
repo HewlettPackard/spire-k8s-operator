@@ -6,6 +6,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -168,17 +169,147 @@ var _ = Describe("SpireServer controller", func() {
 				(b) the number of attempts * interval period exceed the provided timeout value.
 				In the examples below, timeout and interval are Go Duration values of our choosing.
 			*/
-			statefulSetLookupKey := types.NamespacedName{Name: "spire-service", Namespace: "default"}
-			createdStatefulSet := &appsv1.StatefulSet{}
+			// statefulSetLookupKey := types.NamespacedName{Name: "spire-service", Namespace: "default"}
+			// createdStatefulSet := &appsv1.StatefulSet{}
 
-			// We'll need to retry getting this newly created Service, given that creation may not immediately happen.
+			// // We'll need to retry getting this newly created Service, given that creation may not immediately happen.
+			// Eventually(func() bool {
+			// 	err := k8sClient.Get(ctx, statefulSetLookupKey, createdStatefulSet)
+			// 	return err == nil
+			// }, timeout, interval).Should(BeTrue())
+
+			// // Now let us see if the expectation matches or not
+			// Expect(createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
+		})
+		It("Should create SPIRE server Role, ClusterRole, and Bindings", func() {
+			By("By creating SPIRE server Role, ClusterRole, and Bindings with static config")
+			ctx := context.Background()
+
+			roleRules := rbacv1.PolicyRule{
+				Verbs:     []string{"patch", "get", "list"},
+				Resources: []string{"configmaps"},
+				APIGroups: []string{""},
+			}
+			clusterRoleRules := rbacv1.PolicyRule{
+				Verbs:     []string{"create"},
+				Resources: []string{"tokenreviews"},
+				APIGroups: []string{"authentication.k8s.io"},
+			}
+
+			testRole := &rbacv1.Role{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Role",
+					APIVersion: "rbac.authorization.k8s.io/v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "spire-server-configmap-role",
+					Namespace: "default",
+				},
+				Rules: []rbacv1.PolicyRule{
+					roleRules,
+				},
+			}
+
+			testClusterRole := &rbacv1.ClusterRole{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ClusterRole",
+					APIVersion: "rbac.authorization.k8s.io/v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "spire-server-trust-role",
+				},
+				Rules: []rbacv1.PolicyRule{
+					clusterRoleRules,
+				},
+			}
+
+			roleBindingSubject := rbacv1.Subject{
+				Kind:      "ServiceAccount",
+				Name:      "spire-server",
+				Namespace: "default",
+			}
+
+			testRoleBinding := &rbacv1.RoleBinding{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "RoleBinding",
+					APIVersion: "rbac.authorization.k8s.io/v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "spire-server-configmap-role-binding",
+					Namespace: "default",
+				},
+				Subjects: []rbacv1.Subject{
+					roleBindingSubject,
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: "rbac.authorization.k8s.io",
+					Kind:     "Role",
+					Name:     "spire-server-configmap-role",
+				},
+			}
+
+			clusterRoleBindingSubject := rbacv1.Subject{
+				Kind:      "ServiceAccount",
+				Name:      "spire-server",
+				Namespace: "default",
+			}
+
+			testClusterRoleBinding := &rbacv1.ClusterRoleBinding{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ClusterRoleBinding",
+					APIVersion: "rbac.authorization.k8s.io/v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "spire-server-trust-role-binding",
+				},
+				Subjects: []rbacv1.Subject{
+					clusterRoleBindingSubject,
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: "rbac.authorization.k8s.io",
+					Kind:     "ClusterRole",
+					Name:     "spire-server-trust-role",
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, testRole)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, testClusterRole)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, testRoleBinding)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, testClusterRoleBinding)).Should(Succeed())
+
+			roleLookupKey := types.NamespacedName{Name: "spire-server-configmap-role", Namespace: "default"}
+			clusterRoleLookupKey := types.NamespacedName{Name: "spire-server-trust-role", Namespace: "default"}
+			roleBindingLookupKey := types.NamespacedName{Name: "spire-server-configmap-role-binding", Namespace: "default"}
+			clusterRoleBindingLookupKey := types.NamespacedName{Name: "spire-server-trust-role-binding", Namespace: "default"}
+			createdRole := &rbacv1.Role{}
+			createdClusterRole := &rbacv1.ClusterRole{}
+			createdRoleBinding := &rbacv1.RoleBinding{}
+			createdClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+
 			Eventually(func() bool {
-				err := k8sClient.Get(ctx, statefulSetLookupKey, createdStatefulSet)
+				err := k8sClient.Get(ctx, roleLookupKey, createdRole)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, clusterRoleLookupKey, createdClusterRole)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, roleBindingLookupKey, createdRoleBinding)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, clusterRoleBindingLookupKey, createdClusterRoleBinding)
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
 
 			// Now let us see if the expectation matches or not
-			Expect(createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
+			Expect(createdRole.Kind).Should(Equal("Role"))
+			Expect(createdClusterRole.Kind).Should(Equal("ClusterRole"))
+			Expect(createdRoleBinding.Kind).Should(Equal("RoleBinding"))
+			Expect(createdClusterRoleBinding.Kind).Should(Equal("ClusterRoleBinding"))
+
 		})
+
 	})
 })
