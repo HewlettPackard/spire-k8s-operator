@@ -180,5 +180,35 @@ var _ = Describe("SpireServer controller", func() {
 			// Now let us see if the expectation matches or not
 			Expect(createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
 		})
+
+		It("Should create SPIRE server Trust Bundle", func() {
+			By("By creating SPIRE server Trust Bundle with static config")
+			ctx := context.Background()
+			testBundle := &corev1.ConfigMap{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ConfigMap",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "spire-bundle",
+					Namespace: "default",
+				},
+			}
+			Expect(k8sClient.Create(ctx, testBundle)).Should(Succeed())
+
+			bundleLookupKey := types.NamespacedName{Name: "spire-bundle", Namespace: "default"}
+			createdBundle := &corev1.ConfigMap{}
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, bundleLookupKey, createdBundle)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+
+			// Now let us see if the expectation matches or not
+			Expect(createdBundle.APIVersion).Should(Equal("v1"))
+			Expect(createdBundle.Kind).Should(Equal("ConfigMap"))
+			Expect(createdBundle.Namespace).Should(Equal("default"))
+			Expect(createdBundle.Name).Should(Equal("spire-bundle"))
+		})
 	})
 })
