@@ -19,6 +19,8 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -152,6 +154,32 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	curlPod := r.createCurlPod(req.Namespace)
+	err = r.Create(ctx, curlPod)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", curlPod.Namespace, "Name", curlPod.Name)
+		return ctrl.Result{}, err
+	}
+
+	healthCheckService := r.spireHealthCheckServiceDeployment(req.Namespace)
+	err = r.Create(ctx, healthCheckService)
+	if err != nil {
+		logger.Error(err, "Failed to create", "Namespace", healthCheckService.Namespace, "Name", healthCheckService.Name)
+		return ctrl.Result{}, err
+	}
+
+	healthCheck := exec.Command("kubectl exec curl -- curl -s -i spire-health-check:8080/ready")
+	fmt.Println(healthCheck.String())
+
+	status, err := healthCheck.Output()
+
+	if err != nil {
+		logger.Error(err, "Error running healthcheck")
+		return ctrl.Result{}, err
+	}
+
+	fmt.Println("all good", status)
+
 	return ctrl.Result{}, nil
 }
 
@@ -164,7 +192,8 @@ func validateYaml(s *spirev1.SpireServer) error {
 		return errors.New("trust domain is not a valid DNS name")
 	}
 
-	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535) {
+	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535 && s.Spec.Port != 8080) {
+		// port 8080 is reserved for health checks
 		return errors.New("invalid port number") //TODO: should we restrict to other ports? This is basic for all ports.
 	}
 
@@ -539,6 +568,60 @@ health_checks {
 	}
 
 	return configMap
+}
+
+func (r *SpireServerReconciler) createCurlPod(namespace string) *corev1.Pod {
+	podSpec := corev1.PodSpec{
+		Containers: []corev1.Container{{
+			Name:    "curl",
+			Image:   "alpine/curl",
+			Command: []string{"sleep"},
+			Args:    []string{"infiniy"},
+		}},
+	}
+
+	curlPod := &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "curl",
+			Namespace: namespace,
+		},
+		Spec: podSpec,
+	}
+
+	return curlPod
+}
+
+func (r *SpireServerReconciler) spireHealthCheckServiceDeployment(namespace string) *corev1.Service {
+	// need to pass in the user desired specs like port type,ports,selectors here
+	healthCheckServiceSpec := corev1.ServiceSpec{
+		Type: corev1.ServiceTypeNodePort,
+		Ports: []corev1.ServicePort{{
+			Name:       "grpc",
+			Port:       8080,
+			TargetPort: intstr.FromInt(8080),
+			Protocol:   "TCP",
+		}},
+		Selector: map[string]string{
+			"app": "spire-server",
+		},
+	}
+
+	healthCheckService := &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-health-check",
+			Namespace: namespace,
+		},
+		Spec: healthCheckServiceSpec,
+	}
+	return healthCheckService
 }
 
 // SetupWithManager sets up the controller with the Manager.
