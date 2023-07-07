@@ -19,11 +19,11 @@ package controller
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -168,19 +168,42 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	healthCheck := exec.Command("kubectl exec curl -- curl -s -i spire-health-check:8080/ready")
-	fmt.Println(healthCheck.String())
+	quit := make(chan bool, 1)
 
-	status, err := healthCheck.Output()
+	ticker := time.NewTicker(5 * time.Second)
 
-	if err != nil {
-		logger.Error(err, "Error running healthcheck")
-		return ctrl.Result{}, err
+	for {
+		select {
+		case <-quit:
+			ticker.Stop()
+			return ctrl.Result{}, nil
+
+		case <-ticker.C:
+			liveCommand := exec.Command("kubectl", "exec", "curl", "--", "curl", "-s", "-i", "spire-health-check:8080/live")
+			liveStatus, err := liveCommand.Output()
+
+			if err == nil && strings.Contains(string(liveStatus), "OK") {
+				spireserver.Status.Health = "LIVE"
+			} else {
+				spireserver.Status.Health = "NOT LIVE"
+				logger.Error(err, "Error in live status")
+			}
+
+			readyCommand := exec.Command("kubectl", "exec", "curl", "--", "curl", "-s", "-i", "spire-health-check:8080/ready")
+			readyStatus, err := readyCommand.Output()
+
+			if err == nil && strings.Contains(string(readyStatus), "OK") {
+				spireserver.Status.Health = "READY"
+			} else {
+				logger.Error(err, "Error in ready status")
+			}
+
+			if err := r.Status().Update(ctx, spireserver); err != nil {
+				logger.Error(err, "unable to update spire server health status")
+				return ctrl.Result{}, err
+			}
+		}
 	}
-
-	fmt.Println("all good", status)
-
-	return ctrl.Result{}, nil
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
