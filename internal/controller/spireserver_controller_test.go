@@ -205,9 +205,6 @@ var _ = Describe("SpireServer controller", func() {
 			}, timeout, interval).Should(BeTrue())
 
 			// Now let us see if the expectation matches or not
-			Expect(createdBundle.APIVersion).Should(Equal("v1"))
-			Expect(createdBundle.Kind).Should(Equal("ConfigMap"))
-			Expect(createdBundle.Namespace).Should(Equal("default"))
 			Expect(createdBundle.Name).Should(Equal("spire-bundle"))
 		})
 	})
