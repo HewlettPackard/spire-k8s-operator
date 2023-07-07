@@ -90,47 +90,45 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	serviceAccount := r.createServiceAccount(spireserver, req.Namespace)
-	err = r.Create(ctx, serviceAccount)
-	checkIfFailToCreate(err, serviceAccount.Namespace, serviceAccount.Name)
 
 	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, bundle)
-	checkIfFailToCreate(err, bundle.Namespace, bundle.Name)
 
 	roles := r.spireRoleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, roles)
-	checkIfFailToCreate(err, roles.Namespace, roles.Name)
 
 	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, roleBinding)
-	checkIfFailToCreate(err, roleBinding.Namespace, roleBinding.Name)
 
 	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, clusterRoles)
-	checkIfFailToCreate(err, clusterRoles.Namespace, clusterRoles.Name)
 
 	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, clusterRoleBinding)
-	checkIfFailToCreate(err, clusterRoleBinding.Namespace, clusterRoleBinding.Name)
 
 	serverConfigMap := r.spireConfigMapDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, serverConfigMap)
-	checkIfFailToCreate(err, serverConfigMap.Namespace, serverConfigMap.Name)
 
 	spireStatefulSet := r.spireStatefulSetDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, spireStatefulSet)
-	checkIfFailToCreate(err, spireStatefulSet.Namespace, spireStatefulSet.Name)
 
 	spireService := r.spireServiceDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, spireService)
-	checkIfFailToCreate(err, spireService.Namespace, spireService.Name)
+
+	components := map[string]interface{}{
+		"serviceAccount":     serviceAccount,
+		"bundle":             bundle,
+		"role":               roles,
+		"clusterRole":        clusterRoles,
+		"roleBinging":        roleBinding,
+		"clusterRoleBinding": clusterRoleBinding,
+		"serverConfigMap":    serverConfigMap,
+		"spireStatefulSet":   spireStatefulSet,
+		"spireService":       spireService,
+	}
+	for key, value := range components {
+		err = r.Create(ctx, value.(client.Object))
+		checkIfFailToCreate(err, key)
+	}
 
 	return ctrl.Result{}, nil
 }
 
-func checkIfFailToCreate(err error, namespace string, name string) (ctrl.Result, error) {
+func checkIfFailToCreate(err error, name string) (ctrl.Result, error) {
 	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", namespace, "Name", name)
+		logger.Error(err, "Failed to create", "Name", name)
 	}
 	return ctrl.Result{}, err
 }
