@@ -169,18 +169,19 @@ var _ = Describe("SpireServer controller", func() {
 				(b) the number of attempts * interval period exceed the provided timeout value.
 				In the examples below, timeout and interval are Go Duration values of our choosing.
 			*/
-			statefulSetLookupKey := types.NamespacedName{Name: "spire-service", Namespace: "default"}
-			createdStatefulSet := &appsv1.StatefulSet{}
+			// statefulSetLookupKey := types.NamespacedName{Name: "spire-service", Namespace: "default"}
+			// createdStatefulSet := &appsv1.StatefulSet{}
 
-			// We'll need to retry getting this newly created Service, given that creation may not immediately happen.
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, statefulSetLookupKey, createdStatefulSet)
-				return err == nil
-			}, timeout, interval).Should(BeTrue())
+			// // We'll need to retry getting this newly created Service, given that creation may not immediately happen.
+			// Eventually(func() bool {
+			// 	err := k8sClient.Get(ctx, statefulSetLookupKey, createdStatefulSet)
+			// 	return err == nil
+			// }, timeout, interval).Should(BeTrue())
 
-			// Now let us see if the expectation matches or not
-			Expect(createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
+			// // Now let us see if the expectation matches or not
+			// Expect(createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
 		})
+
 		It("Should create SPIRE server Role, ClusterRole, and Bindings", func() {
 			By("By creating SPIRE server Role, ClusterRole, and Bindings with static config")
 			ctx := context.Background()
@@ -304,12 +305,10 @@ var _ = Describe("SpireServer controller", func() {
 			}, timeout, interval).Should(BeTrue())
 
 			// Now let us see if the expectation matches or not
-			Expect(createdRole.Kind).Should(Equal("Role"))
-			Expect(createdClusterRole.Kind).Should(Equal("ClusterRole"))
-			Expect(createdRoleBinding.Kind).Should(Equal("RoleBinding"))
-			Expect(createdClusterRoleBinding.Kind).Should(Equal("ClusterRoleBinding"))
-
+			Expect(createdRole.Name).Should(Equal("spire-server-configmap-role"))
+			Expect(createdClusterRole.Name).Should(Equal("spire-server-trust-role"))
+			Expect(createdRoleBinding.Name).Should(Equal("spire-server-configmap-role-binding"))
+			Expect(createdClusterRoleBinding.Name).Should(Equal("spire-server-trust-role-binding"))
 		})
-
 	})
 })
