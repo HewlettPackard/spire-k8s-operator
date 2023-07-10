@@ -206,6 +206,11 @@ var _ = Describe("SpireServer controller", func() {
 
 			// Now let us see if the expectation matches or not
 			Expect(createdBundle.Name).Should(Equal("spire-bundle"))
+			Expect(createdBundle.Namespace).Should(Equal("default"))
+			Expect(createdBundle.Data).Should(Not(Equal(nil)))
+			Expect(createdBundle.BinaryData).Should(Not(Equal(nil)))
+			Expect(createdBundle.Labels).Should(Not(Equal(nil)))
+			Expect(createdBundle.Annotations).Should(Not(Equal(nil)))
 		})
 	})
 })
