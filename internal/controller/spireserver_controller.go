@@ -440,38 +440,11 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 
 	for _, nodeAttestor := range s.Spec.NodeAttestors {
 		if strings.Compare(nodeAttestor, "join_token") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "join_token" {
-		plugin_data {
-
-		}
-	}`
+			nodeAttestorsConfig += jointTokenNodeAttestor()
 		} else if strings.Compare(nodeAttestor, "k8s_sat") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "k8s_sat" {
-		plugin_data {
-			clusters = {
-				"demo-cluster" = {
-					use_token_review_api_validation = true
-					service_account_allow_list = ["spire:spire-agent"]
-				}
-			}
-		}
-	}`
+			nodeAttestorsConfig += k8sSatNodeAttestor()
 		} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "k8s_psat" {
-		plugin_data {
-			clusters = {
-				"cluster" = {
-					service_account_allow_list = ["` + namespace + `:spire-agent"]
-				}
-			}
-		}
-	}`
+			nodeAttestorsConfig += k8sPsatNodeAttestor(namespace)
 		}
 	}
 
@@ -539,6 +512,45 @@ health_checks {
 	}
 
 	return configMap
+}
+
+func k8sSatNodeAttestor() string {
+	return `
+
+	NodeAttestor "k8s_sat" {
+		plugin_data {
+			clusters = {
+				"demo-cluster" = {
+					use_token_review_api_validation = true
+					service_account_allow_list = ["spire:spire-agent"]
+				}
+			}
+		}
+	}`
+}
+
+func k8sPsatNodeAttestor(namespace string) string {
+	return `
+
+	NodeAttestor "k8s_psat" {
+		plugin_data {
+			clusters = {
+				"cluster" = {
+					service_account_allow_list = ["` + namespace + `:spire-agent"]
+				}
+			}
+		}
+	}`
+}
+
+func jointTokenNodeAttestor() string {
+	return `
+
+	NodeAttestor "join_token" {
+		plugin_data {
+
+		}
+	}`
 }
 
 // SetupWithManager sets up the controller with the Manager.
