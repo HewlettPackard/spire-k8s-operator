@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -179,6 +181,129 @@ var _ = Describe("SpireServer controller", func() {
 
 			// Now let us see if the expectation matches or not
 			Expect(createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
+		})
+
+		It("Should create SPIRE server ConfigMap", func() {
+			By("By creating SPIRE server ConfigMap with static config")
+			ctx := context.Background()
+
+			var nodeAttestors []string = []string{"k8s_sat"}
+			var namespace string = "default"
+			var port int32 = int32(8081)
+			var trustDomain string = "example.org"
+			var keyStorage string = "disk"
+
+			nodeAttestorsConfig := ""
+
+			for _, nodeAttestor := range nodeAttestors {
+				if strings.Compare(nodeAttestor, "join_token") == 0 {
+					nodeAttestorsConfig += `
+		
+			NodeAttestor "join_token" {
+				plugin_data {
+		
+				}
+			}`
+				} else if strings.Compare(nodeAttestor, "k8s_sat") == 0 {
+					nodeAttestorsConfig += `
+		
+			NodeAttestor "k8s_sat" {
+				plugin_data {
+					clusters = {
+						"demo-cluster" = {
+							use_token_review_api_validation = true
+							service_account_allow_list = ["spire:spire-agent"]
+						}
+					}
+				}
+			}`
+				} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
+					nodeAttestorsConfig += `
+		
+			NodeAttestor "k8s_psat" {
+				plugin_data {
+					clusters = {
+						"cluster" = {
+							service_account_allow_list = ["` + namespace + `:spire-agent"]
+						}
+					}
+				}
+			}`
+				}
+			}
+
+			config := `
+		server {
+			bind_address = "0.0.0.0"
+			bind_port = "` + strconv.Itoa(int(port)) + `"
+			socket_path = "/tmp/spire-server/private/api.sock"
+			trust_domain = "` + trustDomain + `"
+			data_dir = "/run/spire/data"
+			log_level = "DEBUG"
+			ca_key_type = "rsa-2048"
+		
+			ca_subject = {
+				country = ["US"],
+				organization = ["SPIFFE"],
+				common_name = "",
+			}
+		}
+		
+		plugins {
+			DataStore "sql" {
+				plugin_data {
+				  database_type = "sqlite3"
+				  connection_string = "/run/spire/data/datastore.sqlite3"
+				}
+			}` +
+				nodeAttestorsConfig + `
+		
+			KeyManager "` + keyStorage + `" {
+				plugin_data {
+					keys_path = "/run/spire/data/keys.json"
+				}
+			}
+		
+			Notifier "k8sbundle" {
+				plugin_data {
+					namespace = "` + namespace + `"
+				}
+			}
+		}
+		
+		health_checks {
+			listener_enabled = true
+			bind_address = "0.0.0.0"
+			bind_port = "8080"
+			live_path = "/live"
+			ready_path = "/ready"
+		}`
+
+			configMap := &corev1.ConfigMap{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ConfigMap",
+					APIVersion: "v1",
+				},
+
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "spire-config-map",
+					Namespace: namespace,
+				},
+
+				Data: map[string]string{
+					"server.conf": config,
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, configMap)).Should(Succeed())
+
+			configMapLookupKey := types.NamespacedName{Name: "spire-config-map", Namespace: "default"}
+			createdConfigMap := &corev1.ConfigMap{}
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, configMapLookupKey, createdConfigMap)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
 		})
 	})
 })
