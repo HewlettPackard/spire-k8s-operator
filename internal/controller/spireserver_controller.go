@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
-	"github.com/google/logger"
+	"github.com/go-logr/logr"
 )
 
 // SpireServerReconciler reconciles a SpireServer object
@@ -118,15 +118,19 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		"spireStatefulSet":   spireStatefulSet,
 		"spireService":       spireService,
 	}
+
 	for key, value := range components {
 		err = r.Create(ctx, value.(client.Object))
-		checkIfFailToCreate(err, key)
+		_, err := checkIfFailToCreate(err, key, logger)
+		if err != nil {
+			break
+		}
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, err
 }
 
-func checkIfFailToCreate(err error, name string) (ctrl.Result, error) {
+func checkIfFailToCreate(err error, name string, logger logr.Logger) (ctrl.Result, error) {
 	if err != nil {
 		logger.Error(err, "Failed to create", "Name", name)
 	}
