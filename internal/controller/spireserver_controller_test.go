@@ -306,9 +306,27 @@ var _ = Describe("SpireServer controller", func() {
 
 			// Now let us see if the expectation matches or not
 			Expect(createdRole.Name).Should(Equal("spire-server-configmap-role"))
+			Expect(createdRole.Labels).Should(Not(Equal(nil)))
+			Expect(createdRole.Annotations).Should(Not(Equal(nil)))
+			Expect(len(createdRole.Rules)).Should(Not(Equal(0)))
+
 			Expect(createdClusterRole.Name).Should(Equal("spire-server-trust-role"))
+			Expect(createdClusterRole.Labels).Should(Not(Equal(nil)))
+			Expect(createdClusterRole.Annotations).Should(Not(Equal(nil)))
+			Expect(len(createdClusterRole.Rules)).Should(Not(Equal(0)))
+
 			Expect(createdRoleBinding.Name).Should(Equal("spire-server-configmap-role-binding"))
+			Expect(createdRoleBinding.Labels).Should(Not(Equal(nil)))
+			Expect(createdRoleBinding.Annotations).Should(Not(Equal(nil)))
+			Expect(createdRoleBinding.RoleRef.Kind).Should(Equal("Role"))
+			Expect(len(createdRoleBinding.Subjects)).Should(Not(Equal(nil)))
+
 			Expect(createdClusterRoleBinding.Name).Should(Equal("spire-server-trust-role-binding"))
+			Expect(createdClusterRoleBinding.Labels).Should(Not(Equal(nil)))
+			Expect(createdClusterRoleBinding.Annotations).Should(Not(Equal(nil)))
+			Expect(createdClusterRoleBinding.RoleRef.Kind).Should(Equal("ClusterRole"))
+			Expect(len(createdClusterRoleBinding.Subjects)).Should(Not(Equal(nil)))
+
 		})
 	})
 })
