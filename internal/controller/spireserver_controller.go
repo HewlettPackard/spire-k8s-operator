@@ -156,10 +156,10 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
-	invalid := false
-	checkTrustDomain(s.Spec.TrustDomain, &invalid)
+	invalidTrustDomain := false
+	checkTrustDomain(s.Spec.TrustDomain, &invalidTrustDomain)
 
-	if invalid {
+	if invalidTrustDomain {
 		return errors.New("trust domain is invalid")
 	}
 
@@ -193,15 +193,15 @@ func validateYaml(s *spirev1.SpireServer) error {
 	return nil
 }
 
-func checkTrustDomain(trustDomain string, invalid *bool) {
+func checkTrustDomain(trustDomain string, invalidTrustDomain *bool) {
 	defer func() {
 		if err := recover(); err != nil {
-			*invalid = true
+			*invalidTrustDomain = true
 		}
 	}()
 
 	spiffeid.RequireTrustDomainFromString(trustDomain)
-	*invalid = false
+	*invalidTrustDomain = false
 }
 
 func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
