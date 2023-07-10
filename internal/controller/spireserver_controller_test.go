@@ -319,13 +319,13 @@ var _ = Describe("SpireServer controller", func() {
 			Expect(createdRoleBinding.Labels).Should(Not(Equal(nil)))
 			Expect(createdRoleBinding.Annotations).Should(Not(Equal(nil)))
 			Expect(createdRoleBinding.RoleRef.Kind).Should(Equal("Role"))
-			Expect(len(createdRoleBinding.Subjects)).Should(Not(Equal(nil)))
+			Expect(createdRoleBinding.Subjects).Should(Not(Equal(nil)))
 
 			Expect(createdClusterRoleBinding.Name).Should(Equal("spire-server-trust-role-binding"))
 			Expect(createdClusterRoleBinding.Labels).Should(Not(Equal(nil)))
 			Expect(createdClusterRoleBinding.Annotations).Should(Not(Equal(nil)))
 			Expect(createdClusterRoleBinding.RoleRef.Kind).Should(Equal("ClusterRole"))
-			Expect(len(createdClusterRoleBinding.Subjects)).Should(Not(Equal(nil)))
+			Expect(createdClusterRoleBinding.Subjects).Should(Not(Equal(nil)))
 
 		})
 	})
