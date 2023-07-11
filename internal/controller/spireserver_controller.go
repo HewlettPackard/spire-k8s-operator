@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -30,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -139,12 +139,11 @@ func checkIfFailToCreate(err error, name string, logger logr.Logger) (ctrl.Resul
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
-	// trust domain takes the same form as a DNS Name
-	validDns, err := regexp.MatchString("^([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9].)+[A-Za-z]{2,}$", s.Spec.TrustDomain)
-	if err != nil {
-		return errors.New("cannot validate DNS name for trust domain")
-	} else if !validDns {
-		return errors.New("trust domain is not a valid DNS name")
+	invalidTrustDomain := false
+	checkTrustDomain(s.Spec.TrustDomain, &invalidTrustDomain)
+
+	if invalidTrustDomain {
+		return errors.New("trust domain is invalid")
 	}
 
 	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535) {
@@ -175,6 +174,17 @@ func validateYaml(s *spirev1.SpireServer) error {
 	}
 
 	return nil
+}
+
+func checkTrustDomain(trustDomain string, invalidTrustDomain *bool) {
+	defer func() {
+		if err := recover(); err != nil {
+			*invalidTrustDomain = true
+		}
+	}()
+
+	spiffeid.RequireTrustDomainFromString(trustDomain)
+	*invalidTrustDomain = false
 }
 
 func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
