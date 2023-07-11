@@ -304,6 +304,12 @@ var _ = Describe("SpireServer controller", func() {
 				err := k8sClient.Get(ctx, configMapLookupKey, createdConfigMap)
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
+
+			Expect(createdConfigMap.Name).Should(Equal("spire-config-map"))
+			Expect(createdConfigMap.Namespace).Should(Equal("default"))
+			Expect(createdConfigMap.Data).ShouldNot(BeEmpty())
+			Expect("server.conf").Should(BeKeyOf(createdConfigMap.Data))
+			Expect(len(createdConfigMap.Data["server.conf"])).ShouldNot(BeZero())
 		})
 	})
 })
