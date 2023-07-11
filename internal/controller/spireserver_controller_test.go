@@ -168,7 +168,7 @@ var _ = Describe("SpireServer controller", func() {
 				(b) the number of attempts * interval period exceed the provided timeout value.
 				In the examples below, timeout and interval are Go Duration values of our choosing.
 			*/
-			statefulSetLookupKey := types.NamespacedName{Name: "spire-service", Namespace: "default"}
+			statefulSetLookupKey := types.NamespacedName{Name: "spire-server", Namespace: "default"}
 			createdStatefulSet := &appsv1.StatefulSet{}
 
 			// We'll need to retry getting this newly created Service, given that creation may not immediately happen.
@@ -178,7 +178,10 @@ var _ = Describe("SpireServer controller", func() {
 			}, timeout, interval).Should(BeTrue())
 
 			// Now let us see if the expectation matches or not
-			Expect(createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
+			Expect(*createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
+			//check for storage volume creation
+			Expect(createdStatefulSet.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests[corev1.ResourceStorage]).Should(Equal(resource.MustParse("1Gi")))
+			Expect(*createdStatefulSet.Spec.Selector).Should(Equal(labelSelector))
 		})
 	})
 })
