@@ -10,15 +10,17 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 
 
 
-| validateYaml  |   |   |   |   |
+#### validateYaml()
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-| createServiceAccount  |   |   |   |   |
+#### createServiceAccount(server *spirev1.SpireServer, namespace string)
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-#### spireBundleDeployment()
+#### spireBundleDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | server | *spirev1.SpireServer       | | | |
@@ -34,7 +36,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | bundle.Kind (string)       | | | |
 |        | bundle.APIVersion (string) | | | |
 
-#### spireRoleDeployment()
+#### spireRoleDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | server | *spirev1.SpireServer       | | | |
@@ -54,7 +56,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | Resources ([]string)      | | | |
 |        | APIGroups ([]string)       | | | |
 
-#### spireRoleBindingDeployment()
+#### spireRoleBindingDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | server | *spirev1.SpireServer       | | | |
@@ -79,7 +81,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | Name (string)      | | | |
 |        | Namespace (string)      | | | |
 
-#### spireClusterRoleDeployment()
+#### spireClusterRoleDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | server | *spirev1.SpireServer       | | | |
@@ -99,7 +101,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | APIGroups ([]string)       | | | |
 
 
-#### spireClusterRoleBindingDeployment()
+#### spireClusterRoleBindingDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | server | *spirev1.SpireServer       | | | |
@@ -123,14 +125,17 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | Name (string)      | | | |
 |        | Namespace (string)      | | | |
 
-| spireConfigMapDeployment  |   |   |   |   |
+#### spireConfigMapDeployment(server *spirev1.SpireServer, namespace string)
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-| spireStatefulSetDeployment  |   |   |   |   |
+#### spireStatefulSetDeployment(server *spirev1.SpireServer, namespace string)
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-| spireServiceDeployment | | | | |
+#### spireServiceDeployment(server *spirev1.SpireServer, namespace string)
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
