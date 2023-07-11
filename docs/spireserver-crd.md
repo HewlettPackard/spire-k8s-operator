@@ -10,7 +10,7 @@ The definition can be found [here](../api/v1/spireserver_types.go).
 | Field | Required | Description |
 | ----- | -------- | ----------- |
 | `trustDomain`         | REQUIRED | The trust domain associated with the SPIRE server |
-| `port`                | REQUIRED | The port on which the SPIRE server Listens to agents. Port 8080 is reserved for healthchecks, so it cannot be used here. |
+| `port`                | REQUIRED | The port on which the SPIRE server Listens to agents. |
 | `nodeAttestors`       | REQUIRED | The node attestor plugins the SPIRE server uses |
 | `keyStorage` | REQUIRED | Indicates whether the generated keys are stored on disk or in memory |
 | `replicas` | REQUIRED | Number of replicas for SPIRE server |

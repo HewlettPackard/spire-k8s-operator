@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -154,23 +153,10 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	curlPod := r.createCurlPod(req.Namespace)
-	err = r.Create(ctx, curlPod)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", curlPod.Namespace, "Name", curlPod.Name)
-		return ctrl.Result{}, err
-	}
-
-	healthCheckService := r.spireHealthCheckServiceDeployment(req.Namespace)
-	err = r.Create(ctx, healthCheckService)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", healthCheckService.Namespace, "Name", healthCheckService.Name)
-		return ctrl.Result{}, err
-	}
-
 	quit := make(chan bool, 1)
 
 	ticker := time.NewTicker(5 * time.Second)
+	var podList corev1.PodList
 
 	for {
 		select {
@@ -179,23 +165,48 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, nil
 
 		case <-ticker.C:
-			liveCommand := exec.Command("kubectl", "exec", "curl", "--", "curl", "-s", "-i", "spire-health-check:8080/live")
-			liveStatus, err := liveCommand.Output()
+			statCount := make(map[string]int)
 
-			if err == nil && strings.Contains(string(liveStatus), "OK") {
-				spireserver.Status.Health = "LIVE"
-			} else {
-				spireserver.Status.Health = "NOT LIVE"
-				logger.Error(err, "Error in live status")
+			if err = r.List(ctx, &podList); err != nil {
+				logger.Error(err, "unable to list pods")
+				return ctrl.Result{}, nil
 			}
 
-			readyCommand := exec.Command("kubectl", "exec", "curl", "--", "curl", "-s", "-i", "spire-health-check:8080/ready")
-			readyStatus, err := readyCommand.Output()
+			for _, pod := range podList.Items {
+				valid := false
 
-			if err == nil && strings.Contains(string(readyStatus), "OK") {
+				if strings.Contains(pod.Name, spireStatefulSet.Name) {
+					for _, condition := range pod.Status.Conditions {
+						if condition.Type == "Ready" && condition.Status == "True" {
+							statCount["ready"]++
+							valid = true
+							break
+						} else if condition.Type == "Initialized" && condition.Status == "True" {
+							statCount["live"]++
+							valid = true
+						} else if condition.Type == "ContainersReady" && condition.Status == "True" {
+							statCount["init"]++
+							valid = true
+						} else if condition.Type == "PodScheduled" && condition.Status == "True" {
+							statCount["init"]++
+							valid = true
+						}
+					}
+
+					if !valid {
+						statCount["err"]++
+					}
+				}
+			}
+
+			if statCount["err"] > 0 {
+				spireserver.Status.Health = "ERROR"
+			} else if statCount["ready"] == int(*spireStatefulSet.Spec.Replicas) {
 				spireserver.Status.Health = "READY"
+			} else if statCount["live"] == int(*spireStatefulSet.Spec.Replicas) {
+				spireserver.Status.Health = "LIVE"
 			} else {
-				logger.Error(err, "Error in ready status")
+				spireserver.Status.Health = "INITIALIZING"
 			}
 
 			if err := r.Status().Update(ctx, spireserver); err != nil {
@@ -215,8 +226,7 @@ func validateYaml(s *spirev1.SpireServer) error {
 		return errors.New("trust domain is not a valid DNS name")
 	}
 
-	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535 && s.Spec.Port != 8080) {
-		// port 8080 is reserved for health checks
+	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535) {
 		return errors.New("invalid port number") //TODO: should we restrict to other ports? This is basic for all ports.
 	}
 
@@ -591,60 +601,6 @@ health_checks {
 	}
 
 	return configMap
-}
-
-func (r *SpireServerReconciler) createCurlPod(namespace string) *corev1.Pod {
-	podSpec := corev1.PodSpec{
-		Containers: []corev1.Container{{
-			Name:    "curl",
-			Image:   "alpine/curl",
-			Command: []string{"sleep"},
-			Args:    []string{"infiniy"},
-		}},
-	}
-
-	curlPod := &corev1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "curl",
-			Namespace: namespace,
-		},
-		Spec: podSpec,
-	}
-
-	return curlPod
-}
-
-func (r *SpireServerReconciler) spireHealthCheckServiceDeployment(namespace string) *corev1.Service {
-	// need to pass in the user desired specs like port type,ports,selectors here
-	healthCheckServiceSpec := corev1.ServiceSpec{
-		Type: corev1.ServiceTypeNodePort,
-		Ports: []corev1.ServicePort{{
-			Name:       "grpc",
-			Port:       8080,
-			TargetPort: intstr.FromInt(8080),
-			Protocol:   "TCP",
-		}},
-		Selector: map[string]string{
-			"app": "spire-server",
-		},
-	}
-
-	healthCheckService := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "spire-health-check",
-			Namespace: namespace,
-		},
-		Spec: healthCheckServiceSpec,
-	}
-	return healthCheckService
 }
 
 // SetupWithManager sets up the controller with the Manager.
