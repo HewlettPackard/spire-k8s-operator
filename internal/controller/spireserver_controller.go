@@ -440,9 +440,9 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 
 	for _, nodeAttestor := range s.Spec.NodeAttestors {
 		if strings.Compare(nodeAttestor, "join_token") == 0 {
-			nodeAttestorsConfig += jointTokenNodeAttestor()
+			nodeAttestorsConfig += joinTokenNodeAttestor()
 		} else if strings.Compare(nodeAttestor, "k8s_sat") == 0 {
-			nodeAttestorsConfig += k8sSatNodeAttestor()
+			nodeAttestorsConfig += k8sSatNodeAttestor(namespace)
 		} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
 			nodeAttestorsConfig += k8sPsatNodeAttestor(namespace)
 		}
@@ -471,7 +471,7 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 	return configMap
 }
 
-func k8sSatNodeAttestor() string {
+func k8sSatNodeAttestor(namespace string) string {
 	return `
 
 	NodeAttestor "k8s_sat" {
@@ -479,7 +479,7 @@ func k8sSatNodeAttestor() string {
 			clusters = {
 				"demo-cluster" = {
 					use_token_review_api_validation = true
-					service_account_allow_list = ["spire:spire-agent"]
+					service_account_allow_list = ["` + namespace + `:spire-agent"]
 				}
 			}
 		}
@@ -500,7 +500,7 @@ func k8sPsatNodeAttestor(namespace string) string {
 	}`
 }
 
-func jointTokenNodeAttestor() string {
+func joinTokenNodeAttestor() string {
 	return `
 
 	NodeAttestor "join_token" {
