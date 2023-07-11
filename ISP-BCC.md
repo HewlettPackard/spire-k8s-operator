@@ -27,16 +27,33 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
-| bundle | bundle.Name (string)       | | | |
+| bundle | &corev1.ConfigMap | | | |
+|        | bundle.Name (string)       | | | |
 |        | bundle.Namespace (string)  | | | |
 |        | bundle.Name (string)       | | | |
 |        | bundle.Kind (string)       | | | |
 |        | bundle.APIVersion (string) | | | |
 
-
-| spireRoleDeployment  |   |   |   |   |
+#### spireRoleDeployment()
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| | | | | |
+| server | *spirev1.SpireServer       | | | |
+|        | server.Namespace (string)  | | | |
+|        | server.Name (string)       | | | |
+| namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
+|           |       |                    | namespace != UD namespace| false |
+|           |       | len(namespace) =< 0 | "" | false |
+| serverRole |  &rbacv1.Role | | | |
+|        | Rules       | | | |
+|        | serverRole.Namespace (string)  | | | |
+|        | serverRole.Name (string)       | | | |
+|        | serverRole.Kind (string)       | | | |
+|        | serverRole.APIVersion (string) | | | |
+| Rules  | rbacv1.PolicyRule     | | | |
+|        | Verbs ([]string)  | | | |
+|        | Resources ([]string)      | | | |
+|        | APIGroups ([]string)       | | | |
+
 
 | spireRoleBindingDeployment  |   |   |   |   |
 |---|---|---|---|---|
