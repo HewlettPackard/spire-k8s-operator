@@ -102,7 +102,26 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 #### spireClusterRoleBindingDeployment()
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| | | | | |
+| server | *spirev1.SpireServer       | | | |
+|        | server.Namespace (string)  | | | |
+|        | server.Name (string)       | | | |
+| namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
+|           |       |                    | namespace != UD namespace| false |
+|           |       | len(namespace) =< 0 | "" | false |
+| serverRole |  &rbacv1.RoleBinding | | | |
+|        | RoleRef       | | | |
+|        | Subjects       | | | |
+|        | serverRole.Name (string)       | | | |
+|        | serverRole.Kind (string)       | | | |
+|        | serverRole.APIVersion (string) | | | |
+| RoleRef  | rbacv1.RoleRef     | | | |
+|        | Kind (string)  | | | |
+|        | Name (string)      | | | |
+|        | APIGroups (string)       | | | |
+| Subject  | rbacv1.Subject     | | | |
+|        | Kind (string)  | | | |
+|        | Name (string)      | | | |
+|        | Namespace (string)      | | | |
 
 | spireConfigMapDeployment  |   |   |   |   |
 |---|---|---|---|---|
