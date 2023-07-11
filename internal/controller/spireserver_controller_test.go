@@ -22,6 +22,37 @@ var _ = Describe("SpireServer controller", func() {
 		timeout  = time.Second * 10
 	)
 	Context("When installing SPIRE server", func() {
+		It("Should create SPIRE server Trust Bundle", func() {
+			By("By creating SPIRE server Trust Bundle with static config")
+			ctx := context.Background()
+			testBundle := &corev1.ConfigMap{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ConfigMap",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "spire-bundle",
+					Namespace: "default",
+				},
+			}
+			Expect(k8sClient.Create(ctx, testBundle)).Should(Succeed())
+
+			bundleLookupKey := types.NamespacedName{Name: "spire-bundle", Namespace: "default"}
+			createdBundle := &corev1.ConfigMap{}
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, bundleLookupKey, createdBundle)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+
+			Expect(createdBundle.ObjectMeta.Name).Should(Equal("spire-bundle"))
+			Expect(createdBundle.ObjectMeta.Namespace).Should(Equal("default"))
+			Expect(createdBundle.Data).Should(Not(Equal(nil)))
+			Expect(createdBundle.BinaryData).Should(Not(Equal(nil)))
+			Expect(createdBundle.Labels).Should(Not(Equal(nil)))
+			Expect(createdBundle.Annotations).Should(Not(Equal(nil)))
+		})
+
 		It("Should create SPIRE server service", func() {
 			By("By creating SPIRE server service with static config")
 			ctx := context.Background()
@@ -179,38 +210,6 @@ var _ = Describe("SpireServer controller", func() {
 
 			// Now let us see if the expectation matches or not
 			Expect(createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
-		})
-
-		It("Should create SPIRE server Trust Bundle", func() {
-			By("By creating SPIRE server Trust Bundle with static config")
-			ctx := context.Background()
-			testBundle := &corev1.ConfigMap{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ConfigMap",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "spire-bundle",
-					Namespace: "default",
-				},
-			}
-			Expect(k8sClient.Create(ctx, testBundle)).Should(Succeed())
-
-			bundleLookupKey := types.NamespacedName{Name: "spire-bundle", Namespace: "default"}
-			createdBundle := &corev1.ConfigMap{}
-
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, bundleLookupKey, createdBundle)
-				return err == nil
-			}, timeout, interval).Should(BeTrue())
-
-			// Now let us see if the expectation matches or not
-			Expect(createdBundle.Name).Should(Equal("spire-bundle"))
-			Expect(createdBundle.Namespace).Should(Equal("default"))
-			Expect(createdBundle.Data).Should(Not(Equal(nil)))
-			Expect(createdBundle.BinaryData).Should(Not(Equal(nil)))
-			Expect(createdBundle.Labels).Should(Not(Equal(nil)))
-			Expect(createdBundle.Annotations).Should(Not(Equal(nil)))
 		})
 	})
 })
