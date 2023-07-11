@@ -54,16 +54,33 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | Resources ([]string)      | | | |
 |        | APIGroups ([]string)       | | | |
 
-
-| spireRoleBindingDeployment  |   |   |   |   |
+#### spireRoleBindingDeployment()
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-| spireClusterRoleDeployment  |   |   |   |   |
+#### spireClusterRoleDeployment()
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| | | | | |
+| server | *spirev1.SpireServer       | | | |
+|        | server.Namespace (string)  | | | |
+|        | server.Name (string)       | | | |
+| namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
+|           |       |                    | namespace != UD namespace| false |
+|           |       | len(namespace) =< 0 | "" | false |
+| clusterRole |  &rbacv1.ClusterRole | | | |
+|        | Rules       | | | |
+|        | clusterRole.Name (string)       | | | |
+|        | clusterRole.Kind (string)       | | | |
+|        | clusterRole.APIVersion (string) | | | |
+| Rules  | rbacv1.PolicyRule     | | | |
+|        | Verbs ([]string)  | | | |
+|        | Resources ([]string)      | | | |
+|        | APIGroups ([]string)       | | | |
 
-| spireClusterRoleBindingDeployment  |   |   |   |   |
+
+#### spireClusterRoleBindingDeployment()
+| Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
