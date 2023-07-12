@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	"github.com/go-logr/logr"
 )
 
 // SpireServerReconciler reconciles a SpireServer object
@@ -90,70 +91,51 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	serviceAccount := r.createServiceAccount(spireserver, req.Namespace)
-	err = r.Create(ctx, serviceAccount)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", serviceAccount.Namespace, "Name", serviceAccount.Name)
-		return ctrl.Result{}, err
-	}
 
 	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, bundle)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
-		return ctrl.Result{}, err
-	}
 
 	roles := r.spireRoleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, roles)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", roles.Namespace, "Name", roles.Name)
-		return ctrl.Result{}, err
-	}
 
 	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, roleBinding)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
-		return ctrl.Result{}, err
-	}
 
 	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, clusterRoles)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
-		return ctrl.Result{}, err
-	}
 
 	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, clusterRoleBinding)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
-		return ctrl.Result{}, err
-	}
 
 	serverConfigMap := r.spireConfigMapDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, serverConfigMap)
-	if err != nil {
-		logger.Error(err, "Failed to create ConfigMap.")
-		err = r.Delete(ctx, spireserver)
-		return ctrl.Result{}, err
-	}
 
 	spireStatefulSet := r.spireStatefulSetDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, spireStatefulSet)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", spireStatefulSet.Namespace, "Name", spireStatefulSet.Name)
-		return ctrl.Result{}, err
-	}
 
 	spireService := r.spireServiceDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, spireService)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", spireService.Namespace, "Name", spireService.Name)
-		return ctrl.Result{}, err
+
+	components := map[string]interface{}{
+		"serviceAccount":     serviceAccount,
+		"bundle":             bundle,
+		"role":               roles,
+		"clusterRole":        clusterRoles,
+		"roleBinging":        roleBinding,
+		"clusterRoleBinding": clusterRoleBinding,
+		"serverConfigMap":    serverConfigMap,
+		"spireStatefulSet":   spireStatefulSet,
+		"spireService":       spireService,
 	}
 
+	for key, value := range components {
+		err = r.Create(ctx, value.(client.Object))
+		result, createError := checkIfFailToCreate(err, key, logger)
+		if createError != nil {
+			err = createError
+			return result, err
+		}
+	}
 	return healthCheck(r, ctx, spireserver, spireStatefulSet)
+}
+
+func checkIfFailToCreate(err error, name string, logger logr.Logger) (ctrl.Result, error) {
+	if err != nil {
+		logger.Error(err, "Failed to create", "Name", name)
+	}
+	return ctrl.Result{}, err
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
