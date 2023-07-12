@@ -1,5 +1,4 @@
 # Kubernetes Operator for SPIRE
----
 
 The [Kubernetes Operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) for SPIRE configures, deploys, and helps ensure that a SPIRE server is up and running in a Kubernetes cluster based on a basic user-defined specification. 
 
