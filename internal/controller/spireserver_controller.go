@@ -450,87 +450,17 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 
 	for _, nodeAttestor := range s.Spec.NodeAttestors {
 		if strings.Compare(nodeAttestor, "join_token") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "join_token" {
-		plugin_data {
-
-		}
-	}`
+			nodeAttestorsConfig += joinTokenNodeAttestor()
 		} else if strings.Compare(nodeAttestor, "k8s_sat") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "k8s_sat" {
-		plugin_data {
-			clusters = {
-				"demo-cluster" = {
-					use_token_review_api_validation = true
-					service_account_allow_list = ["spire:spire-agent"]
-				}
-			}
-		}
-	}`
+			nodeAttestorsConfig += k8sSatNodeAttestor(namespace)
 		} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "k8s_psat" {
-		plugin_data {
-			clusters = {
-				"cluster" = {
-					service_account_allow_list = ["` + namespace + `:spire-agent"]
-				}
-			}
-		}
-	}`
+			nodeAttestorsConfig += k8sPsatNodeAttestor(namespace)
 		}
 	}
 
-	config := `
-server {
-	bind_address = "0.0.0.0"
-	bind_port = "` + strconv.Itoa(s.Spec.Port) + `"
-	socket_path = "/tmp/spire-server/private/api.sock"
-	trust_domain = "` + s.Spec.TrustDomain + `"
-	data_dir = "/run/spire/data"
-	log_level = "DEBUG"
-	ca_key_type = "rsa-2048"
-
-	ca_subject = {
-		country = ["US"],
-		organization = ["SPIFFE"],
-		common_name = "",
-	}
-}
-
-plugins {
-	DataStore "sql" {
-		plugin_data {
-		  database_type = "sqlite3"
-		  connection_string = "/run/spire/data/datastore.sqlite3"
-		}
-	}` +
-		nodeAttestorsConfig + `
-
-	KeyManager "` + s.Spec.KeyStorage + `" {
-		plugin_data {
-			keys_path = "/run/spire/data/keys.json"
-		}
-	}
-
-	Notifier "k8sbundle" {
-		plugin_data {
-			namespace = "` + namespace + `"
-		}
-	}
-}
-
-health_checks {
-	listener_enabled = true
-	bind_address = "0.0.0.0"
-	bind_port = "8080"
-	live_path = "/live"
-	ready_path = "/ready"
-}`
+	config := serverCreation(strconv.Itoa(s.Spec.Port), s.Spec.TrustDomain) +
+		plugins(nodeAttestorsConfig, s.Spec.KeyStorage, namespace) +
+		healthChecks()
 
 	configMap := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -549,6 +479,102 @@ health_checks {
 	}
 
 	return configMap
+}
+
+func k8sSatNodeAttestor(namespace string) string {
+	return `
+
+	NodeAttestor "k8s_sat" {
+		plugin_data {
+			clusters = {
+				"demo-cluster" = {
+					use_token_review_api_validation = true
+					service_account_allow_list = ["` + namespace + `:spire-agent"]
+				}
+			}
+		}
+	}`
+}
+
+func k8sPsatNodeAttestor(namespace string) string {
+	return `
+
+	NodeAttestor "k8s_psat" {
+		plugin_data {
+			clusters = {
+				"cluster" = {
+					service_account_allow_list = ["` + namespace + `:spire-agent"]
+				}
+			}
+		}
+	}`
+}
+
+func joinTokenNodeAttestor() string {
+	return `
+
+	NodeAttestor "join_token" {
+		plugin_data {
+
+		}
+	}`
+}
+
+func serverCreation(bindingPort string, trustDomain string) string {
+	return `
+	server {
+		bind_address = "0.0.0.0"
+		bind_port = "` + bindingPort + `"
+		socket_path = "/tmp/spire-server/private/api.sock"
+		trust_domain = "` + trustDomain + `"
+		data_dir = "/run/spire/data"
+		log_level = "DEBUG"
+		ca_key_type = "rsa-2048"
+	
+		ca_subject = {
+			country = ["US"],
+			organization = ["SPIFFE"],
+			common_name = "",
+		}
+	}`
+}
+
+func plugins(nodeAttestorsConfig string, keyStorage string, namespace string) string {
+	return `
+
+	plugins {
+		DataStore "sql" {
+			plugin_data {
+			  database_type = "sqlite3"
+			  connection_string = "/run/spire/data/datastore.sqlite3"
+			}
+		}` +
+		nodeAttestorsConfig + `
+	
+		KeyManager "` + keyStorage + `" {
+			plugin_data {
+				keys_path = "/run/spire/data/keys.json"
+			}
+		}
+	
+		Notifier "k8sbundle" {
+			plugin_data {
+				namespace = "` + namespace + `"
+			}
+		}
+	}`
+}
+
+func healthChecks() string {
+	return `
+
+health_checks {
+	listener_enabled = true
+	bind_address = "0.0.0.0"
+	bind_port = "8080"
+	live_path = "/live"
+	ready_path = "/ready"
+}`
 }
 
 // SetupWithManager sets up the controller with the Manager.
