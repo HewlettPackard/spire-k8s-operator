@@ -15,7 +15,11 @@ spec:
     singular: spireserver
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.health
+      name: Health
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: SpireServer is the Schema for the spireservers API

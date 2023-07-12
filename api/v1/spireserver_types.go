@@ -50,6 +50,7 @@ type SpireServerStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Health",type=string,JSONPath=`.status.health`
 
 // SpireServer is the Schema for the spireservers API
 type SpireServer struct {

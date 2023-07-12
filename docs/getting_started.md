@@ -30,3 +30,6 @@ kubectl apply -f config/samples
 ```bash
 kubectl get spireservers
 ```
+
+## Note
+In line with conventional practices for SPIRE, it is not recommended to run more than 1 SPIRE server instance in a cluster. This also conflicts with the controller's logic for health checks. Nonetheless, you can have replicas of a SPIRE server instance corresponding to the same trust domain under the HA model with this controller. 
