@@ -14,7 +14,7 @@ The [SPIRE Server](docs/spireserver-crd.md) resource is a CRD that represents a 
 
 #### Configuring and Installing a SPIRE Server
 
-The controller listens for the creation of a resource of type SPIRE Server for its reconciliation logic to be triggered. Based on the specifications in the user-inputted yaml file for a SPIRE Server instance, customized Kubernetes resources (such as `ConfigMap`, `StatefulSet`, `Service`, etc.) are generated and deployed in the Kubernetes cluster. The operator supports the High Availability model if more than 1 replica is specified in the user-inputted yaml file. 
+The controller listens for the creation of a resource of type SPIRE Server for its reconciliation logic to be triggered. Based on the specifications in the user-inputted yaml file for a SPIRE Server instance, customized Kubernetes resources (such as `ConfigMap`, `StatefulSet`, `Service`, etc.) are generated and deployed in the Kubernetes cluster. 
 
 #### Health Checks
 
