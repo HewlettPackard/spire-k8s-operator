@@ -122,13 +122,13 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	for key, value := range components {
 		err = r.Create(ctx, value.(client.Object))
-		_, createError := checkIfFailToCreate(err, key, logger)
+		result, createError := checkIfFailToCreate(err, key, logger)
 		if createError != nil {
 			err = createError
-			return ctrl.Result{}, err
+			return result, err
 		}
 	}
-  return healthCheck(r, ctx, spireserver, spireStatefulSet)
+	return healthCheck(r, ctx, spireserver, spireStatefulSet)
 }
 
 func checkIfFailToCreate(err error, name string, logger logr.Logger) (ctrl.Result, error) {
