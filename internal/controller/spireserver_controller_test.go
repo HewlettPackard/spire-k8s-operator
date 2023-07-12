@@ -211,13 +211,23 @@ var _ = Describe("SpireServer controller", func() {
 			Expect(createdRoleBinding.Labels).Should(Not(Equal(nil)))
 			Expect(createdRoleBinding.Annotations).Should(Not(Equal(nil)))
 			Expect(createdRoleBinding.RoleRef.Kind).Should(Equal("Role"))
+			Expect(createdRoleBinding.RoleRef.APIGroup).Should(Equal("rbac.authorization.k8s.io"))
+			Expect(createdRoleBinding.RoleRef.Name).Should(Equal("spire-server-configmap-role"))
 			Expect(createdRoleBinding.Subjects).Should(Not(Equal(nil)))
+			Expect(createdRoleBinding.Subjects[0].Kind).Should(Equal("ServiceAccount"))
+			Expect(createdRoleBinding.Subjects[0].Name).Should(Equal("spire-server"))
+			Expect(createdRoleBinding.Subjects[0].Namespace).Should(Equal("default"))
 
 			Expect(createdClusterRoleBinding.ObjectMeta.Name).Should(Equal("spire-server-trust-role-binding"))
 			Expect(createdClusterRoleBinding.Labels).Should(Not(Equal(nil)))
 			Expect(createdClusterRoleBinding.Annotations).Should(Not(Equal(nil)))
 			Expect(createdClusterRoleBinding.RoleRef.Kind).Should(Equal("ClusterRole"))
+			Expect(createdClusterRoleBinding.RoleRef.APIGroup).Should(Equal("rbac.authorization.k8s.io"))
+			Expect(createdClusterRoleBinding.RoleRef.Name).Should(Equal("spire-server-trust-role"))
 			Expect(createdClusterRoleBinding.Subjects).Should(Not(Equal(nil)))
+			Expect(createdClusterRoleBinding.Subjects[0].Kind).Should(Equal("ServiceAccount"))
+			Expect(createdClusterRoleBinding.Subjects[0].Name).Should(Equal("spire-server"))
+			Expect(createdClusterRoleBinding.Subjects[0].Namespace).Should(Equal("default"))
 
 		})
 
