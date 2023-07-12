@@ -153,68 +153,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	quit := make(chan bool, 1)
-
-	ticker := time.NewTicker(5 * time.Second)
-	var podList corev1.PodList
-
-	for {
-		select {
-		case <-quit:
-			ticker.Stop()
-			return ctrl.Result{}, nil
-
-		case <-ticker.C:
-			statCount := make(map[string]int)
-
-			if err = r.List(ctx, &podList); err != nil {
-				logger.Error(err, "unable to list pods")
-				return ctrl.Result{}, nil
-			}
-
-			for _, pod := range podList.Items {
-				valid := false
-
-				if strings.Contains(pod.Name, spireStatefulSet.Name) {
-					for _, condition := range pod.Status.Conditions {
-						if condition.Type == "Ready" && condition.Status == "True" {
-							statCount["ready"]++
-							valid = true
-							break
-						} else if condition.Type == "Initialized" && condition.Status == "True" {
-							statCount["live"]++
-							valid = true
-						} else if condition.Type == "ContainersReady" && condition.Status == "True" {
-							statCount["init"]++
-							valid = true
-						} else if condition.Type == "PodScheduled" && condition.Status == "True" {
-							statCount["init"]++
-							valid = true
-						}
-					}
-
-					if !valid {
-						statCount["err"]++
-					}
-				}
-			}
-
-			if statCount["err"] > 0 {
-				spireserver.Status.Health = "ERROR"
-			} else if statCount["ready"] == int(*spireStatefulSet.Spec.Replicas) {
-				spireserver.Status.Health = "READY"
-			} else if statCount["live"] == int(*spireStatefulSet.Spec.Replicas) {
-				spireserver.Status.Health = "LIVE"
-			} else {
-				spireserver.Status.Health = "INITIALIZING"
-			}
-
-			if err := r.Status().Update(ctx, spireserver); err != nil {
-				logger.Error(err, "unable to update spire server health status")
-				return ctrl.Result{}, err
-			}
-		}
-	}
+	return healthCheck(r, ctx, spireserver, spireStatefulSet)
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
@@ -601,6 +540,85 @@ health_checks {
 	}
 
 	return configMap
+}
+
+func healthCheck(r *SpireServerReconciler, ctx context.Context, s *spirev1.SpireServer,
+	statefulSet *appsv1.StatefulSet) (ctrl.Result, error) {
+	quit := make(chan bool, 1)
+
+	ticker := time.NewTicker(5 * time.Second)
+	var podList corev1.PodList
+
+	for {
+		select {
+		case <-quit:
+			ticker.Stop()
+			return ctrl.Result{}, nil
+
+		case <-ticker.C:
+			statCount := make(map[string]int)
+
+			if err := r.List(ctx, &podList); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			for _, pod := range podList.Items {
+				valid := false
+
+				if strings.Contains(pod.Name, statefulSet.Name) {
+					for _, condition := range pod.Status.Conditions {
+						if condition.Status == "True" {
+							valid = true
+							updateStatusMap(statCount, condition.Type)
+
+							if condition.Type == "Ready" {
+								break
+							}
+						}
+					}
+
+					if !valid {
+						statCount["err"]++
+					}
+				}
+			}
+
+			replicas := int(*statefulSet.Spec.Replicas)
+			err := updateHealth(statCount, s, replicas, ctx, r)
+
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	}
+}
+
+func updateHealth(statCount map[string]int, s *spirev1.SpireServer, replicas int, ctx context.Context, r *SpireServerReconciler) error {
+	if statCount["err"] > 0 {
+		s.Status.Health = "ERROR"
+	} else if statCount["ready"] == replicas {
+		s.Status.Health = "READY"
+	} else if statCount["live"] == replicas {
+		s.Status.Health = "LIVE"
+	} else {
+		s.Status.Health = "INITIALIZING"
+	}
+
+	if err := r.Status().Update(ctx, s); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateStatusMap(statCount map[string]int, podConditionType corev1.PodConditionType) {
+	if podConditionType == "Ready" {
+		statCount["ready"]++
+	} else if podConditionType == "Initialized" {
+		statCount["live"]++
+	} else if podConditionType == "ContainersReady" || podConditionType == "PodScheduled" {
+		statCount["init"]++
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
