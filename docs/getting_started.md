@@ -21,9 +21,9 @@ make install
 make run
 ```
 
-3. Deploy the sample CRD. 
+3. Deploy the sample CRD yaml. 
 ```bash
-kubectl apply -f config/samples
+kubectl apply -f spire-server-01.yaml
 ```
 
 4. You can test whether the CRD is deployed correctly with the following command. 
