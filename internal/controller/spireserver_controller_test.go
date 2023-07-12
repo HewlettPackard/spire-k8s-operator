@@ -190,6 +190,7 @@ var _ = Describe("SpireServer controller", func() {
 
 			// Now let us see if the expectation matches or not
 			Expect(createdRole.ObjectMeta.Name).Should(Equal("spire-server-configmap-role"))
+			Expect(createdRole.ObjectMeta.Namespace).Should(Equal("default"))
 			Expect(createdRole.Labels).Should(Not(Equal(nil)))
 			Expect(createdRole.Annotations).Should(Not(Equal(nil)))
 			Expect(len(createdRole.Rules)).Should(Not(Equal(0)))
@@ -208,6 +209,7 @@ var _ = Describe("SpireServer controller", func() {
 			Expect(createdClusterRole.Rules[0].APIGroups).Should(ContainElement("authentication.k8s.io"))
 
 			Expect(createdRoleBinding.ObjectMeta.Name).Should(Equal("spire-server-configmap-role-binding"))
+			Expect(createdRoleBinding.ObjectMeta.Namespace).Should(Equal("default"))
 			Expect(createdRoleBinding.Labels).Should(Not(Equal(nil)))
 			Expect(createdRoleBinding.Annotations).Should(Not(Equal(nil)))
 			Expect(createdRoleBinding.RoleRef.Kind).Should(Equal("Role"))
@@ -228,7 +230,6 @@ var _ = Describe("SpireServer controller", func() {
 			Expect(createdClusterRoleBinding.Subjects[0].Kind).Should(Equal("ServiceAccount"))
 			Expect(createdClusterRoleBinding.Subjects[0].Name).Should(Equal("spire-server"))
 			Expect(createdClusterRoleBinding.Subjects[0].Namespace).Should(Equal("default"))
-
 		})
 
 		It("Should create SPIRE server StatefulSet", func() {
