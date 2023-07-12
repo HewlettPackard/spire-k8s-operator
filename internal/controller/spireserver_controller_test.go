@@ -83,17 +83,21 @@ var _ = Describe("SpireServer controller", func() {
 			}
 			livenessProbe := corev1.Probe{
 				ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{
-					Path: "/live", Port: intstr.IntOrString{IntVal: 8080}}},
+					Path: "/live", Port: intstr.IntOrString{IntVal: 8080}, Scheme: "HTTP"}},
 				FailureThreshold:    2,
+				SuccessThreshold:    1,
 				InitialDelaySeconds: 15,
 				PeriodSeconds:       60,
 				TimeoutSeconds:      3,
 			}
 			readinessProbe := corev1.Probe{
 				ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{
-					Path: "/ready", Port: intstr.IntOrString{IntVal: 8080}}},
+					Path: "/ready", Port: intstr.IntOrString{IntVal: 8080}, Scheme: "HTTP"}},
 				InitialDelaySeconds: 5,
+				TimeoutSeconds:      1,
 				PeriodSeconds:       5,
+				SuccessThreshold:    1,
+				FailureThreshold:    3,
 			}
 			podVolume := corev1.Volume{
 				Name: "spire-config",
@@ -177,10 +181,17 @@ var _ = Describe("SpireServer controller", func() {
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
 
+			Expect(createdStatefulSet.ObjectMeta.Name).Should(Equal("spire-server"))
+			Expect(createdStatefulSet.ObjectMeta.Namespace).Should(Equal("default"))
 			// Now let us see if the expectation matches or not
 			Expect(*createdStatefulSet.Spec.Replicas).Should(Equal(int32(2)))
 			//check for storage volume creation
 			Expect(createdStatefulSet.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests[corev1.ResourceStorage]).Should(Equal(resource.MustParse("1Gi")))
+			Expect(*createdStatefulSet.Spec.Template.Spec.Containers[0].LivenessProbe).Should(Equal(livenessProbe))
+			Expect(*createdStatefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe).Should(Equal(readinessProbe))
+			Expect(createdStatefulSet.Spec.Template.Spec.Containers[0].VolumeMounts[0]).Should(Equal(volMount1))
+			Expect(createdStatefulSet.Spec.Template.Spec.Containers[0].VolumeMounts[1]).Should(Equal(volMount2))
+			Expect(createdStatefulSet.Spec.Template.Spec.Volumes[0].VolumeSource.ConfigMap.LocalObjectReference.Name).Should(Equal("spire-config-map"))
 			Expect(*createdStatefulSet.Spec.Selector).Should(Equal(labelSelector))
 		})
 	})
