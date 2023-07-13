@@ -14,14 +14,14 @@ The [SPIRE Server](docs/spireserver-crd.md) resource is a CRD that represents a 
 
 #### Configuring and Installing a SPIRE Server
 
-The controller listens for the creation of a resource of type SPIRE Server for its reconciliation logic to be triggered. Based on the specifications in the user-inputted yaml file for a SPIRE Server instance, customized Kubernetes resources (such as `ConfigMap`, `StatefulSet`, `Service`, etc.) are generated and deployed in the Kubernetes cluster. 
+The controller listens for the creation of a resource of type SPIRE Server for its reconciliation logic to be triggered. The user must create their own configuration for a SPIRE server in a yaml file for a resource of kind `SpireServer`. The user can run the command `kubectl apply -f <yaml-file-name>` to trigger the controller. Based on the specifications in the user-inputted yaml file for a SPIRE Server instance, customized Kubernetes resources (such as `ConfigMap`, `StatefulSet`, `Service`, etc.) are generated and deployed in the Kubernetes cluster. 
 
 #### Health Checks
 
 Once all server-related components are deployed, the controller constantly runs a health check in the background by assessing the conditions of the SPIRE server pods deployed by the operator. The health status of the SPIRE Server is updated every 5 seconds and can be viewed by running `kubectl get spireservers`. 
 
-#### Deploying the Operator
-The operator is designed to be deployed in the same Kubernetes cluster as where the user intends on hosting the SPIRE servers. 
+#### Running the Operator
+The operator is designed to control/manage the same Kubernetes cluster where the SPIRE servers will be deployed. 
 
 ---
 
