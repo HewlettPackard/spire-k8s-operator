@@ -173,6 +173,18 @@ func validateYaml(s *spirev1.SpireServer) error {
 		return errors.New("at least one replica needs to exist")
 	}
 
+	if !((strings.Compare("sqlite3", strings.ToLower(s.Spec.DataStore)) == 0) || (strings.Compare("postgres", strings.ToLower(s.Spec.DataStore)) == 0) || (strings.Compare("mysql", strings.ToLower(s.Spec.DataStore)) == 0)) {
+		return errors.New("invalid datastore: supported datastores are sqlite3, postgres, and mysql")
+	}
+
+	if (strings.Compare("sqlite3", strings.ToLower(s.Spec.DataStore)) == 0) && (s.Spec.Replicas > 1) {
+		return errors.New("cannot have more than 1 replica with sqlite3 database")
+	}
+
+	if len(s.Spec.ConnectionString) == 0 {
+		return errors.New("connection string cannot be empty")
+	}
+
 	return nil
 }
 
@@ -442,7 +454,7 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 	}
 
 	config := serverCreation(strconv.Itoa(s.Spec.Port), s.Spec.TrustDomain) +
-		plugins(nodeAttestorsConfig, s.Spec.KeyStorage, namespace) +
+		plugins(nodeAttestorsConfig, s.Spec.KeyStorage, namespace, s.Spec.DataStore, s.Spec.ConnectionString) +
 		healthChecks()
 
 	configMap := &corev1.ConfigMap{
@@ -522,14 +534,14 @@ func serverCreation(bindingPort string, trustDomain string) string {
 	}`
 }
 
-func plugins(nodeAttestorsConfig string, keyStorage string, namespace string) string {
+func plugins(nodeAttestorsConfig string, keyStorage string, namespace string, datastore string, connectionString string) string {
 	return `
 
 	plugins {
 		DataStore "sql" {
 			plugin_data {
-			  database_type = "sqlite3"
-			  connection_string = "/run/spire/data/datastore.sqlite3"
+			  database_type = "` + datastore + `"
+			  connection_string = "` + connectionString + `"
 			}
 		}` +
 		nodeAttestorsConfig + `

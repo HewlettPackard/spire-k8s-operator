@@ -34,11 +34,13 @@ type SpireServerSpec struct {
 	NodeAttestors []string `json:"nodeAttestors"`
 
 	// ServerDataPath string `json:"serverDataPath"` unsure how this would be validated so omitted for now
-	// default datastore is sqlite so no config for that
-
 	KeyStorage string `json:"keyStorage"`
 
 	Replicas int `json:"replicas"`
+
+	DataStore string `json:"dataStore"`
+
+	ConnectionString string `json:"connectionString"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer
