@@ -1,7 +1,7 @@
 # Contributing to the Spire Operator Project
 
-The change management process for the Galadriel Project is designed to be transparent, fair, and
-efficient. Anyone may contribute to a project in the Galadriel repository that they have read access to, provided they:
+The change management process for the Spire Operator Project is designed to be transparent, fair, and
+efficient. Anyone may contribute to a project in the Spire Operator repository that they have read access to, provided they:
 
 * Abide by the SPIFFE [code of conduct](https://github.com/spiffe/spiffe/blob/main/CODE-OF-CONDUCT.md)
 * Can certify the clauses in the [Developer Certificate of Origin](https://github.com/spiffe/spiffe/blob/main/DCO)
@@ -18,8 +18,7 @@ efficient. Anyone may contribute to a project in the Galadriel repository that t
 3. Update the docs, if necessary
 4. Ensure your branch is based on the latest commit in `main`
 5. Ensure all tests pass (see project docs for more information)
-6. Make sure your commit messages contain a `Signed-off-by: <your-email-address>` line (see `git-commit --signoff`) to
-   certify the [DCO](/DCO)
+6. Make sure your commit messages contain a `Signed-off-by: <your-email-address>` line (see `git-commit --signoff`)
 7. Make sure your all your commits are GPG-signed
 8. Open a [pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
    against the upstream `main` branch
@@ -44,10 +43,6 @@ Following approval, the pull request will be merged by the submitter of the pull
 Coding conventions will follow
 the [SPIFFE project conventions](https://github.com/spiffe/spiffe/blob/main/CONTRIBUTING.md#coding-conventions-).
 
-## Datastore Contributions
-
-For more detailed information on working with the Datastore, including structure, migrations, schema changes, and more,
-please review the [Datastore README](pkg/server/db/README.md).
 
 ## Third-party code
 
