@@ -19,9 +19,9 @@ package controller
 import (
 	"context"
 	"errors"
-	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	"github.com/go-logr/logr"
 )
 
 // SpireServerReconciler reconciles a SpireServer object
@@ -89,79 +91,59 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	serviceAccount := r.createServiceAccount(spireserver, req.Namespace)
-	err = r.Create(ctx, serviceAccount)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", serviceAccount.Namespace, "Name", serviceAccount.Name)
-		return ctrl.Result{}, err
-	}
 
 	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, bundle)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", bundle.Namespace, "Name", bundle.Name)
-		return ctrl.Result{}, err
-	}
 
 	roles := r.spireRoleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, roles)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", roles.Namespace, "Name", roles.Name)
-		return ctrl.Result{}, err
-	}
 
 	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, roleBinding)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", roleBinding.Namespace, "Name", roleBinding.Name)
-		return ctrl.Result{}, err
-	}
 
 	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, clusterRoles)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoles.Namespace, "Name", clusterRoles.Name)
-		return ctrl.Result{}, err
-	}
 
 	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, clusterRoleBinding)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", clusterRoleBinding.Namespace, "Name", clusterRoleBinding.Name)
-		return ctrl.Result{}, err
-	}
 
 	serverConfigMap := r.spireConfigMapDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, serverConfigMap)
-	if err != nil {
-		logger.Error(err, "Failed to create ConfigMap.")
-		err = r.Delete(ctx, spireserver)
-		return ctrl.Result{}, err
-	}
 
 	spireStatefulSet := r.spireStatefulSetDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, spireStatefulSet)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", spireStatefulSet.Namespace, "Name", spireStatefulSet.Name)
-		return ctrl.Result{}, err
-	}
 
 	spireService := r.spireServiceDeployment(spireserver, req.Namespace)
-	err = r.Create(ctx, spireService)
-	if err != nil {
-		logger.Error(err, "Failed to create", "Namespace", spireService.Namespace, "Name", spireService.Name)
-		return ctrl.Result{}, err
+
+	components := map[string]interface{}{
+		"serviceAccount":     serviceAccount,
+		"bundle":             bundle,
+		"role":               roles,
+		"clusterRole":        clusterRoles,
+		"roleBinging":        roleBinding,
+		"clusterRoleBinding": clusterRoleBinding,
+		"serverConfigMap":    serverConfigMap,
+		"spireStatefulSet":   spireStatefulSet,
+		"spireService":       spireService,
 	}
 
-	return ctrl.Result{}, nil
+	for key, value := range components {
+		err = r.Create(ctx, value.(client.Object))
+		result, createError := checkIfFailToCreate(err, key, logger)
+		if createError != nil {
+			err = createError
+			return result, err
+		}
+	}
+	return healthCheck(r, ctx, spireserver, spireStatefulSet)
+}
+
+func checkIfFailToCreate(err error, name string, logger logr.Logger) (ctrl.Result, error) {
+	if err != nil {
+		logger.Error(err, "Failed to create", "Name", name)
+	}
+	return ctrl.Result{}, err
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
-	// trust domain takes the same form as a DNS Name
-	validDns, err := regexp.MatchString("^([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9].)+[A-Za-z]{2,}$", s.Spec.TrustDomain)
-	if err != nil {
-		return errors.New("cannot validate DNS name for trust domain")
-	} else if !validDns {
-		return errors.New("trust domain is not a valid DNS name")
+	invalidTrustDomain := false
+	checkTrustDomain(s.Spec.TrustDomain, &invalidTrustDomain)
+
+	if invalidTrustDomain {
+		return errors.New("trust domain is invalid")
 	}
 
 	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535) {
@@ -192,6 +174,17 @@ func validateYaml(s *spirev1.SpireServer) error {
 	}
 
 	return nil
+}
+
+func checkTrustDomain(trustDomain string, invalidTrustDomain *bool) {
+	defer func() {
+		if err := recover(); err != nil {
+			*invalidTrustDomain = true
+		}
+	}()
+
+	spiffeid.RequireTrustDomainFromString(trustDomain)
+	*invalidTrustDomain = false
 }
 
 func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
@@ -440,87 +433,17 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 
 	for _, nodeAttestor := range s.Spec.NodeAttestors {
 		if strings.Compare(nodeAttestor, "join_token") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "join_token" {
-		plugin_data {
-
-		}
-	}`
+			nodeAttestorsConfig += joinTokenNodeAttestor()
 		} else if strings.Compare(nodeAttestor, "k8s_sat") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "k8s_sat" {
-		plugin_data {
-			clusters = {
-				"demo-cluster" = {
-					use_token_review_api_validation = true
-					service_account_allow_list = ["spire:spire-agent"]
-				}
-			}
-		}
-	}`
+			nodeAttestorsConfig += k8sSatNodeAttestor(namespace)
 		} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
-			nodeAttestorsConfig += `
-
-	NodeAttestor "k8s_psat" {
-		plugin_data {
-			clusters = {
-				"cluster" = {
-					service_account_allow_list = ["` + namespace + `:spire-agent"]
-				}
-			}
-		}
-	}`
+			nodeAttestorsConfig += k8sPsatNodeAttestor(namespace)
 		}
 	}
 
-	config := `
-server {
-	bind_address = "0.0.0.0"
-	bind_port = "` + strconv.Itoa(s.Spec.Port) + `"
-	socket_path = "/tmp/spire-server/private/api.sock"
-	trust_domain = "` + s.Spec.TrustDomain + `"
-	data_dir = "/run/spire/data"
-	log_level = "DEBUG"
-	ca_key_type = "rsa-2048"
-
-	ca_subject = {
-		country = ["US"],
-		organization = ["SPIFFE"],
-		common_name = "",
-	}
-}
-
-plugins {
-	DataStore "sql" {
-		plugin_data {
-		  database_type = "sqlite3"
-		  connection_string = "/run/spire/data/datastore.sqlite3"
-		}
-	}` +
-		nodeAttestorsConfig + `
-
-	KeyManager "` + s.Spec.KeyStorage + `" {
-		plugin_data {
-			keys_path = "/run/spire/data/keys.json"
-		}
-	}
-
-	Notifier "k8sbundle" {
-		plugin_data {
-			namespace = "` + namespace + `"
-		}
-	}
-}
-
-health_checks {
-	listener_enabled = true
-	bind_address = "0.0.0.0"
-	bind_port = "8080"
-	live_path = "/live"
-	ready_path = "/ready"
-}`
+	config := serverCreation(strconv.Itoa(s.Spec.Port), s.Spec.TrustDomain) +
+		plugins(nodeAttestorsConfig, s.Spec.KeyStorage, namespace) +
+		healthChecks()
 
 	configMap := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -539,6 +462,181 @@ health_checks {
 	}
 
 	return configMap
+}
+
+func k8sSatNodeAttestor(namespace string) string {
+	return `
+
+	NodeAttestor "k8s_sat" {
+		plugin_data {
+			clusters = {
+				"demo-cluster" = {
+					use_token_review_api_validation = true
+					service_account_allow_list = ["` + namespace + `:spire-agent"]
+				}
+			}
+		}
+	}`
+}
+
+func k8sPsatNodeAttestor(namespace string) string {
+	return `
+
+	NodeAttestor "k8s_psat" {
+		plugin_data {
+			clusters = {
+				"cluster" = {
+					service_account_allow_list = ["` + namespace + `:spire-agent"]
+				}
+			}
+		}
+	}`
+}
+
+func joinTokenNodeAttestor() string {
+	return `
+
+	NodeAttestor "join_token" {
+		plugin_data {
+
+		}
+	}`
+}
+
+func serverCreation(bindingPort string, trustDomain string) string {
+	return `
+	server {
+		bind_address = "0.0.0.0"
+		bind_port = "` + bindingPort + `"
+		socket_path = "/tmp/spire-server/private/api.sock"
+		trust_domain = "` + trustDomain + `"
+		data_dir = "/run/spire/data"
+		log_level = "DEBUG"
+		ca_key_type = "rsa-2048"
+	
+		ca_subject = {
+			country = ["US"],
+			organization = ["SPIFFE"],
+			common_name = "",
+		}
+	}`
+}
+
+func plugins(nodeAttestorsConfig string, keyStorage string, namespace string) string {
+	return `
+
+	plugins {
+		DataStore "sql" {
+			plugin_data {
+			  database_type = "sqlite3"
+			  connection_string = "/run/spire/data/datastore.sqlite3"
+			}
+		}` +
+		nodeAttestorsConfig + `
+	
+		KeyManager "` + keyStorage + `" {
+			plugin_data {
+				keys_path = "/run/spire/data/keys.json"
+			}
+		}
+	
+		Notifier "k8sbundle" {
+			plugin_data {
+				namespace = "` + namespace + `"
+			}
+		}
+	}`
+}
+
+func healthChecks() string {
+	return `
+
+health_checks {
+	listener_enabled = true
+	bind_address = "0.0.0.0"
+	bind_port = "8080"
+	live_path = "/live"
+	ready_path = "/ready"
+}`
+}
+
+func healthCheck(r *SpireServerReconciler, ctx context.Context, s *spirev1.SpireServer,
+	statefulSet *appsv1.StatefulSet) (ctrl.Result, error) {
+	quit := make(chan bool, 1)
+
+	ticker := time.NewTicker(5 * time.Second)
+	var podList corev1.PodList
+
+	for {
+		select {
+		case <-quit:
+			ticker.Stop()
+			return ctrl.Result{}, nil
+
+		case <-ticker.C:
+			statCount := make(map[string]int)
+
+			if err := r.List(ctx, &podList); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			for _, pod := range podList.Items {
+				valid := false
+
+				if strings.Contains(pod.Name, statefulSet.Name) {
+					for _, condition := range pod.Status.Conditions {
+						if condition.Status == "True" {
+							valid = true
+							updateStatusMap(statCount, condition.Type)
+
+							if condition.Type == "Ready" {
+								break
+							}
+						}
+					}
+
+					if !valid {
+						statCount["err"]++
+					}
+				}
+			}
+
+			replicas := int(*statefulSet.Spec.Replicas)
+			err := updateHealth(statCount, s, replicas, ctx, r)
+
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	}
+}
+
+func updateHealth(statCount map[string]int, s *spirev1.SpireServer, replicas int, ctx context.Context, r *SpireServerReconciler) error {
+	if statCount["err"] > 0 {
+		s.Status.Health = "ERROR"
+	} else if statCount["ready"] == replicas {
+		s.Status.Health = "READY"
+	} else if statCount["live"] == replicas {
+		s.Status.Health = "LIVE"
+	} else {
+		s.Status.Health = "INITIALIZING"
+	}
+
+	if err := r.Status().Update(ctx, s); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateStatusMap(statCount map[string]int, podConditionType corev1.PodConditionType) {
+	if podConditionType == "Ready" {
+		statCount["ready"]++
+	} else if podConditionType == "Initialized" {
+		statCount["live"]++
+	} else if podConditionType == "ContainersReady" || podConditionType == "PodScheduled" {
+		statCount["init"]++
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
