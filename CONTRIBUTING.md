@@ -9,7 +9,7 @@ efficient. Anyone may contribute to a project in the Spire Operator repository t
 ## Getting started
 
 * First, [README](/README.md) to become familiar with how the Spire Operator Project is managed.
-* Make sure you're familiar with our [Coding Conventions](#coding-conventions-a-nameconventionsa).
+* Make sure you're familiar with our [Coding Conventions](#coding-conventions).
 
 ## Sending a pull request
 
@@ -18,7 +18,7 @@ efficient. Anyone may contribute to a project in the Spire Operator repository t
 3. Update the docs, if necessary
 4. Ensure your branch is based on the latest commit in `main`
 5. Ensure all tests pass (see project docs for more information)
-6. Make sure your commit messages contain a `Signed-off-by: <your-email-address>` line (see `git-commit --signoff`)
+6. Make sure your commit messages contain a `Signed-off-by: <your-email-address>` line (see `git-commit --signoff`) to certify the [DCO](https://github.com/spiffe/spiffe/blob/main/DCO)
 7. Make sure your all your commits are GPG-signed
 8. Open a [pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
    against the upstream `main` branch
