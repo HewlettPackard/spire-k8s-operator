@@ -32,3 +32,10 @@ kubectl apply -f config/samples/spire-server-01.yaml
 ```bash
 kubectl get spireservers
 ```
+
+5. To check whether all related resources have been deployed correctly, you can run the following commands. 
+```bash
+kubectl get statefulset
+kubectl get pods
+kubectl get services
+```
