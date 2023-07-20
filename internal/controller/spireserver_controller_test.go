@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -662,8 +661,33 @@ var _ = Describe("SpireServer controller", func() {
 			createdSpireServer := &spirev1.SpireServer{}
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
-				fmt.Println(err)
 				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with all valid fields", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:   "example.org",
+					Port:          8081,
+					NodeAttestors: []string{"k8s_sat"},
+					KeyStorage:    "disk",
+					Replicas:      1,
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should create and NOT delete the CRD instance", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err == nil
 			}, timeout, interval).Should(BeTrue())
 		})
 	})
