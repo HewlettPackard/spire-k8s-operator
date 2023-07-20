@@ -20,9 +20,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -75,11 +78,33 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme: scheme.Scheme,
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&SpireServerReconciler{
+		Client: k8sManager.GetClient(),
+		Scheme: k8sManager.GetScheme(),
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	go func() {
+		err = k8sManager.Start(ctrl.SetupSignalHandler())
+		Expect(err).ToNot(HaveOccurred())
+	}()
 })
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
-	Expect(testEnv.Stop()).To(Succeed())
+	err := testEnv.Stop()
+
+	if err != nil {
+		time.Sleep(4 * time.Second)
+	}
+
+	err = testEnv.Stop()
+	Expect(err).NotTo(HaveOccurred())
 
 	Expect(os.Unsetenv("TEST_ASSET_KUBE_APISERVER")).To(Succeed())
 	Expect(os.Unsetenv("TEST_ASSET_ETCD")).To(Succeed())
