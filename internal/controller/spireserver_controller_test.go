@@ -532,16 +532,13 @@ var _ = Describe("SpireServer controller", func() {
 		APIVersion: "spire.hpe.com/v1",
 		Kind:       "SpireServer",
 	}
-
 	serverObjectMeta := metav1.ObjectMeta{
 		Name:      "invalid-spire-server",
 		Namespace: "default",
 	}
-
 	Context("When creating SPIRE server with invalid/empty trust domain", func() {
 		var ctx = context.Background()
 		var spireServer *spirev1.SpireServer
-
 		BeforeEach(func() {
 			spireServer = &spirev1.SpireServer{
 				TypeMeta:   serverTypeMeta,
@@ -554,14 +551,11 @@ var _ = Describe("SpireServer controller", func() {
 					Replicas:      1,
 				},
 			}
-
 			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
 		})
-
 		It("should delete the CRD instance created", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
-
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
 				return err != nil
@@ -571,7 +565,6 @@ var _ = Describe("SpireServer controller", func() {
 	Context("When creating SPIRE Server with unsupported node attestors", func() {
 		var ctx = context.Background()
 		var spireServer *spirev1.SpireServer
-
 		BeforeEach(func() {
 			spireServer = &spirev1.SpireServer{
 				TypeMeta:   serverTypeMeta,
@@ -584,14 +577,11 @@ var _ = Describe("SpireServer controller", func() {
 					Replicas:      1,
 				},
 			}
-
 			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
 		})
-
 		It("should delete the CRD instance created", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
-
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
 				return err != nil
@@ -601,7 +591,6 @@ var _ = Describe("SpireServer controller", func() {
 	Context("When creating SPIRE Server with incorrect key storage", func() {
 		var ctx = context.Background()
 		var spireServer *spirev1.SpireServer
-
 		BeforeEach(func() {
 			spireServer = &spirev1.SpireServer{
 				TypeMeta:   serverTypeMeta,
@@ -614,14 +603,11 @@ var _ = Describe("SpireServer controller", func() {
 					Replicas:      1,
 				},
 			}
-
 			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
 		})
-
 		It("should delete the CRD instance created", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
-
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
 				return err != nil
@@ -631,7 +617,6 @@ var _ = Describe("SpireServer controller", func() {
 	Context("When creating SPIRE Server with invalid port number", func() {
 		var ctx = context.Background()
 		var spireServer *spirev1.SpireServer
-
 		BeforeEach(func() {
 			spireServer = &spirev1.SpireServer{
 				TypeMeta:   serverTypeMeta,
@@ -644,14 +629,11 @@ var _ = Describe("SpireServer controller", func() {
 					Replicas:      1,
 				},
 			}
-
 			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
 		})
-
 		It("should delete the CRD instance created", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
-
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
 				return err != nil
@@ -661,7 +643,6 @@ var _ = Describe("SpireServer controller", func() {
 	Context("When creating SPIRE Server with invalid replicas", func() {
 		var ctx = context.Background()
 		var spireServer *spirev1.SpireServer
-
 		BeforeEach(func() {
 			spireServer = &spirev1.SpireServer{
 				TypeMeta:   serverTypeMeta,
@@ -674,14 +655,11 @@ var _ = Describe("SpireServer controller", func() {
 					Replicas:      -1,
 				},
 			}
-
 			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
 		})
-
 		It("should delete the CRD instance created", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
-
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
 				fmt.Println(err)
