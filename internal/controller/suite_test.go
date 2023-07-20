@@ -25,8 +25,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -97,13 +96,18 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
-	err := testEnv.Stop()
-
-	if err != nil {
-		time.Sleep(4 * time.Second)
-	}
-
-	err = testEnv.Stop()
+	err := (func() (err error) {
+		// https://github.com/kubernetes-sigs/controller-runtime/issues/1571
+		sleepTime := 1 * time.Millisecond
+		for i := 0; i < 12; i++ {
+			if err = testEnv.Stop(); err == nil {
+				return
+			}
+			sleepTime *= 2
+			time.Sleep(sleepTime)
+		}
+		return
+	})()
 	Expect(err).NotTo(HaveOccurred())
 
 	Expect(os.Unsetenv("TEST_ASSET_KUBE_APISERVER")).To(Succeed())
