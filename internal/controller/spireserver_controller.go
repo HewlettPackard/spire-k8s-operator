@@ -397,7 +397,9 @@ func (r *SpireServerReconciler) spireStatefulSetDeployment(m *spirev1.SpireServe
 func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, namespace string) *corev1.Service {
 	// need to pass in the user desired specs like port type,ports,selectors here
 	serviceSpec := corev1.ServiceSpec{
-		Ports: []corev1.ServicePort{{Port: int32(m.Spec.Port)}},
+		Type:     corev1.ServiceType("NodePort"),
+		Ports:    []corev1.ServicePort{{Name: "grpc", Port: int32(m.Spec.Port), Protocol: corev1.Protocol("TCP")}},
+		Selector: map[string]string{"app": "spire-server"},
 	}
 	spireService := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
