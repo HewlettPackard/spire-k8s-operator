@@ -19,6 +19,8 @@ package controller
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,10 +50,38 @@ type SpireAgentReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
 
 	// TODO(user): your logic here
+	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
 
+	components := map[string]interface{}{
+		"serviceAccount": serviceAccount,
+	}
+
+	for key, value := range components {
+		err := r.Create(ctx, value.(client.Object))
+		result, createError := checkIfFailToCreate(err, key, logger)
+		if createError != nil {
+			err = createError
+			return result, err
+		}
+	}
 	return ctrl.Result{}, nil
+}
+
+func (r *SpireAgentReconciler) agentServiceAccountDeployment(namespace string) *corev1.ServiceAccount {
+	serviceAccount := &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-agent",
+			Namespace: namespace,
+		},
+	}
+	return serviceAccount
 }
 
 // SetupWithManager sets up the controller with the Manager.
