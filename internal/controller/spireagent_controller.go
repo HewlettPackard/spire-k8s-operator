@@ -18,7 +18,12 @@ package controller
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,9 +54,186 @@ type SpireAgentReconciler struct {
 func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
+
+	agent := &spirev1.SpireAgent{}
+
+	// fetching SPIRE Agent instance
+	err := r.Get(ctx, req.NamespacedName, agent)
+	if err != nil {
+		if apiErrors.IsNotFound(err) {
+			logger.Error(err, "SPIRE Agent not found.")
+			return ctrl.Result{}, nil
+		}
+
+		logger.Error(err, "Failed to get SPIRE Agent instance.")
+		return ctrl.Result{}, nil
+	}
+
+	agentConfigMap := r.agentConfigMapDeployment(agent, req.Namespace)
+	components := map[string]interface{}{
+		"agentConfigMap": agentConfigMap,
+	}
+
+	for key, value := range components {
+		err = r.Create(ctx, value.(client.Object))
+		result, createError := checkIfFailToCreate(err, key, logger)
+		if createError != nil {
+			err = createError
+			return result, err
+		}
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *SpireAgentReconciler) agentConfigMapDeployment(a *spirev1.SpireAgent, namespace string) *corev1.ConfigMap {
+	nodeAttestorsConfig := ""
+
+	if strings.Compare(a.Spec.NodeAttestor, "join_token") == 0 {
+		nodeAttestorsConfig += joinTokenAgentNodeAttestor()
+	} else if strings.Compare(a.Spec.NodeAttestor, "k8s_sat") == 0 {
+		nodeAttestorsConfig += k8sSatAgentNodeAttestor()
+	} else if strings.Compare(a.Spec.NodeAttestor, "k8s_psat") == 0 {
+		nodeAttestorsConfig += k8sPsatAgentNodeAttestor()
+	}
+
+	workloadAttestorsConfig := ""
+	for _, wLAttestor := range a.Spec.WorkloadAttestors {
+		if strings.Compare(wLAttestor, "k8s") == 0 {
+			workloadAttestorsConfig += k8sWLAttestor()
+		} else if strings.Compare(wLAttestor, "unix") == 0 {
+			workloadAttestorsConfig += unixWLAttestor()
+		} else if strings.Compare(wLAttestor, "docker") == 0 {
+			workloadAttestorsConfig += dockerWLAttestor()
+		} else if strings.Compare(wLAttestor, "systemd") == 0 {
+			workloadAttestorsConfig += systemdWLAttestor()
+		} else if strings.Compare(wLAttestor, "windows") == 0 {
+			workloadAttestorsConfig += windowsWLAttestor()
+		}
+	}
+
+	config := agentCreation(strconv.Itoa(a.Spec.ServerPort), a.Spec.TrustDomain) +
+		pluginsAgent(nodeAttestorsConfig, a.Spec.KeyStorage, workloadAttestorsConfig) +
+		healthChecks()
+
+	configMap := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-agent",
+			Namespace: namespace,
+		},
+
+		Data: map[string]string{
+			"agent.conf": config,
+		},
+	}
+
+	return configMap
+}
+
+func joinTokenAgentNodeAttestor() string {
+	return `
+	NodeAttestor "join_token" {
+		plugin_data {
+
+		}
+	}`
+}
+
+func k8sSatAgentNodeAttestor() string {
+	return `
+	NodeAttestor "k8s_sat" {
+		plugin_data {
+			cluster = "demo-cluster"
+		}
+	}`
+}
+
+func k8sPsatAgentNodeAttestor() string {
+	return `
+	NodeAttestor "k8s_psat" {
+		plugin_data {
+			clusters = {
+				"cluster" = {
+		
+				}
+			}
+		}
+	}`
+}
+
+func agentCreation(port string, trustDomain string) string {
+	return `
+	agent {
+		data_dir = "/run/spire"
+		log_level = "DEBUG"
+		server_address = "spire-service"
+		server_port = "` + port + `"
+		socket_path = "/run/spire/sockets/agent.sock"
+		trust_bundle_path = "/run/spire/bundle/bundle.crt"
+		trust_domain = "` + trustDomain + `"
+	  }`
+}
+
+func pluginsAgent(nodeAttestorsConfig string, keyStorage string, workloadAttestorsConfig string) string {
+	return `
+
+	plugins {
+		` + nodeAttestorsConfig + `
+	
+		KeyManager "` + keyStorage + `" {
+			plugin_data {
+			}
+		} ` +
+		workloadAttestorsConfig + `
+	}`
+}
+
+func k8sWLAttestor() string {
+	return `
+
+	WorkloadAttestor "k8s" {
+		plugin_data {
+			skip_kubelet_verification = true
+		}
+	}`
+}
+
+func unixWLAttestor() string {
+	return `
+
+	WorkloadAttestor "unix" {
+		plugin_data {
+		}
+	}`
+}
+
+func dockerWLAttestor() string {
+	return `
+
+	WorkloadAttestor "docker" {
+		plugin_data {
+		}
+	}`
+}
+
+func systemdWLAttestor() string {
+	return `
+
+	WorkloadAttestor "systemd" {
+	}`
+}
+
+func windowsWLAttestor() string {
+	return `
+
+	WorkloadAttestor "windows" {
+	}`
 }
 
 // SetupWithManager sets up the controller with the Manager.
