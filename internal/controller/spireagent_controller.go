@@ -18,7 +18,10 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"strings"
 
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,6 +35,10 @@ type SpireAgentReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+var (
+	supportedWorkloadAttestors = []string{"k8s", "unix", "docker", "systemd", "windows"}
+)
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents/status,verbs=get;update;patch
@@ -49,9 +56,75 @@ type SpireAgentReconciler struct {
 func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
+
+	agent := &spirev1.SpireAgent{}
+
+	// fetching SPIRE Agent instance
+	err := r.Get(ctx, req.NamespacedName, agent)
+	if err != nil {
+		if apiErrors.IsNotFound(err) {
+			logger.Error(err, "SPIRE Agent not found.")
+			return ctrl.Result{}, nil
+		}
+
+		logger.Error(err, "Failed to get SPIRE Agent instance.")
+		return ctrl.Result{}, nil
+	}
+
+	err = validateAgentYaml(agent, r, ctx)
+	if err != nil {
+		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE agent. Deleting old instance of CRD.")
+		err = r.Delete(ctx, agent)
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx context.Context) error {
+	invalidTrustDomain := false
+	checkTrustDomain(a.Spec.TrustDomain, &invalidTrustDomain)
+
+	if invalidTrustDomain {
+		return errors.New("trust domain is invalid")
+	}
+
+	if a.Spec.ServerPort != serverPort {
+		return errors.New("the inputted port does not correspond to a SPIRE server")
+	}
+
+	match := false
+	for _, nodeAttestor := range serverNodeAttestors {
+		if strings.Compare(nodeAttestor, nodeAttestor) == 0 {
+			match = true
+			break
+		}
+	}
+
+	if !match {
+		return errors.New("the inputted node attestor is not supported by the server")
+	}
+
+	for _, currWLAttestor := range a.Spec.WorkloadAttestors {
+		match = false
+		for _, wLAttestor := range supportedWorkloadAttestors {
+			if strings.Compare(currWLAttestor, wLAttestor) == 0 {
+				match = true
+				break
+			}
+		}
+	}
+
+	if !match {
+		return errors.New("incorrect workload attestors list inputted: at least one of the specified workload attestors is not supported")
+	}
+
+	if !((strings.Compare("disk", strings.ToLower(a.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(a.Spec.KeyStorage)) == 0)) {
+		return errors.New("generated key storage is only supported on disk or in memory")
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
