@@ -19,6 +19,8 @@ package controller
 import (
 	"context"
 
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,10 +50,72 @@ type SpireAgentReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
 
 	// TODO(user): your logic here
+	clusterRole := r.agentClusterRoleDeployment()
+	clusterRoleBinding := r.agentClusterRoleBindingDeployment(req.Namespace)
 
+	components := map[string]interface{}{
+		"clusterRole":        clusterRole,
+		"clusterRoleBinding": clusterRoleBinding,
+	}
+
+	for key, value := range components {
+		err := r.Create(ctx, value.(client.Object))
+		result, createError := checkIfFailToCreate(err, key, logger)
+		if createError != nil {
+			err = createError
+			return result, err
+		}
+	}
 	return ctrl.Result{}, nil
+}
+func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole {
+	rules := rbacv1.PolicyRule{
+		Verbs:     []string{"get"},
+		Resources: []string{"pods", "nodes", "nodes/proxy"},
+		APIGroups: []string{""},
+	}
+	clusterRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-agent-cluster-role",
+		},
+		Rules: []rbacv1.PolicyRule{
+			rules,
+		},
+	}
+	return clusterRole
+}
+func (r *SpireAgentReconciler) agentClusterRoleBindingDeployment(namespace string) *rbacv1.ClusterRoleBinding {
+	subject := rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "spire-agent",
+		Namespace: namespace,
+	}
+
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-agent-cluster-role-binding",
+		},
+		Subjects: []rbacv1.Subject{
+			subject,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "spire-agent-cluster-role",
+		},
+	}
+	return clusterRoleBinding
 }
 
 // SetupWithManager sets up the controller with the Manager.
