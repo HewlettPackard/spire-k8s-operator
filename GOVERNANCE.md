@@ -27,7 +27,7 @@ The submitter of a pull request bears the responsibility of addressing any feedb
 open, it is also the submitter's responsibility to ensure that the proposed change is always in a mergeable state. For
 guidelines on submitting a pull request for approval, please refer to the [Contributor's Guide](/CONTRIBUTING.md).
 
-**All changes must garner approval from at least one Maintainer**
+**All changes must garner approval from at least two Maintainer**
 
 Each proposed change must be approved by at least one maintainer before it can be merged into the primary codebase.
 This ensures that the code is thoroughly reviewed and maintains the high standards set by the Spire Operator Project.
