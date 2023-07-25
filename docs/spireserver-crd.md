@@ -18,7 +18,7 @@ The definition can be found [here](../api/v1/spireserver_types.go).
 ## SpireServerStatus
  Field | Description |
 | ----- | ----------- |
-| `health` | Indicates whether the SPIRE server is live or ready |
+| `health` | Indicates whether the SPIRE server is in an error state (`ERROR`), initializing (`INIT`), live (`LIVE`), or ready (`READY`) |
 
 ## Examples
 1. SPIRE Server from [SPIRE's Quickstart for Kubernetes](https://spiffe.io/docs/latest/try/getting-started-k8s/)
