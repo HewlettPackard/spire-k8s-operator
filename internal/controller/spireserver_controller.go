@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
+	"golang.org/x/exp/slices"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,6 +50,7 @@ type SpireServerReconciler struct {
 
 var (
 	supportedNodeAttestors = []string{"k8s_psat", "k8s_sat", "join_token"}
+	supportedDataStores    = []string{"sqlite3", "postgres", "mysql"}
 )
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
@@ -173,7 +175,7 @@ func validateYaml(s *spirev1.SpireServer) error {
 		return errors.New("at least one replica needs to exist")
 	}
 
-	if !((strings.Compare("sqlite3", strings.ToLower(s.Spec.DataStore)) == 0) || (strings.Compare("postgres", strings.ToLower(s.Spec.DataStore)) == 0) || (strings.Compare("mysql", strings.ToLower(s.Spec.DataStore)) == 0)) {
+	if !(slices.Contains(supportedDataStores, strings.ToLower(s.Spec.DataStore))) {
 		return errors.New("invalid datastore: supported datastores are sqlite3, postgres, and mysql")
 	}
 
