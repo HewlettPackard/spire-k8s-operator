@@ -39,91 +39,124 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 #### spireRoleDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
 | serverRole |  &rbacv1.Role | | | |
 |        | Rules       | | | |
-|        | serverRole.Namespace (string)  | | | |
-|        | serverRole.Name (string)       | | | |
-|        | serverRole.Kind (string)       | | | |
-|        | serverRole.APIVersion (string) | | | |
+|        | serverRole.Namespace (string)  | len(namespace) > 0 | namespace == UD namespace| true |
+|        |                                |                    | namespace != UD namespace| false |
+|        |                                | len(namespace) =< 0 | "" | false |
+|        | serverRole.Name (string)       | name == "spire-server-configmap-role"| "spire-server-configmap-role"| true |
+|        |                                | name != "spire-server-configmap-role"| "anythingElse"| false |
+|        | serverRole.Kind (string)       | Kind == "Role" | "Role" |true |
+|        |                                | Kind != "Role" | "anythingElse" |false |
+|        | serverRole.APIVersion (string) | APIVersion == "rbac.authorization.k8s.io/v1"| "rbac.authorization.k8s.io/v1"| true |
+|        |                                | APIVersion != "rbac.authorization.k8s.io/v1"| "anythingElse"| false |
 | Rules  | rbacv1.PolicyRule     | | | |
-|        | Verbs ([]string)  | | | |
-|        | Resources ([]string)      | | | |
-|        | APIGroups ([]string)       | | | |
+|        | Verbs ([]string) | len(Verbs) >= 3 | []string{"patch", "get", "list"}| true |
+|        |                  |                 | []string{"addams", "get", "list"}| false |
+|        |                  | len(Verbs) < 3  | []string{"get", "list"} | false|
+|        | Resources ([]string) | len(Resources) == 1 | []string{"configmaps"} | true |
+|        |                      |                     | []string{"whatnot"} | false |
+|        |                      | len(Resources) != 1 | []string{}| false |
+|        | APIGroups ([]string) | len(APIGroups) == 1 | []string{""}| true |
+|        |                      |                     | []string{"blah"}| false |
+|        |                      | len(APIGroups) != 1 | []string{}| false |
 
 #### spireRoleBindingDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
 | serverRole |  &rbacv1.RoleBinding | | | |
 |        | RoleRef       | | | |
 |        | Subjects       | | | |
-|        | serverRole.Namespace (string)  | | | |
-|        | serverRole.Name (string)       | | | |
-|        | serverRole.Kind (string)       | | | |
-|        | serverRole.APIVersion (string) | | | |
+|        | serverRole.Namespace (string)  | len(namespace) > 0 | namespace == UD namespace| true |
+|        |                                |                    | namespace != UD namespace| false |
+|        |                                | len(namespace) =< 0 | "" | false |
+|        | serverRole.Name (string)       | name == "spire-server-configmap-role-binding"| "spire-server-configmap-role-binding"| true |
+|        |                                | name != "spire-server-configmap-role-binding"| "anythingElse"| false |
+|        | serverRole.Kind (string)       | Kind == "RoleBinding" | "RoleBinding" |true |
+|        |                                | Kind != "RoleBinding" | "anythingElse" |false |
+|        | serverRole.APIVersion (string) | APIVersion == "rbac.authorization.k8s.io/v1"| "rbac.authorization.k8s.io/v1"| true |
+|        |                                | APIVersion != "rbac.authorization.k8s.io/v1"| "anythingElse"| false |
 | RoleRef  | rbacv1.RoleRef     | | | |
-|        | Kind (string)  | | | |
-|        | Name (string)      | | | |
-|        | APIGroups (string)       | | | |
+|        | Name (string) | name == "spire-server-configmap-role"| "spire-server-configmap-role"| true |
+|        |               | name != "spire-server-configmap-role"| "anythingElse"| false |
+|        | Kind (string) | Kind == "Role" | "Role" |true |
+|        |               | Kind != "Role" | "anythingElse" |false |
+|        | APIVersion (string) | APIVersion == "rbac.authorization.k8s.io/v1"| "rbac.authorization.k8s.io/v1"| true |
+|        |                     | APIVersion != "rbac.authorization.k8s.io/v1"| "anythingElse"| false |
 | Subject  | rbacv1.Subject     | | | |
-|        | Kind (string)  | | | |
-|        | Name (string)      | | | |
-|        | Namespace (string)      | | | |
+|        | Kind (string)     | Kind == "ServiceAccount"| "ServiceAccount" | true |
+|        |                   | Kind != "ServiceAccount"|"anythingElse" | false |
+|        | Name (string)     |len(name) > 0 | name == "spire-server" | true |
+|        |                   |                    | namespace != "spire-server"| false |
+|        |                   | len(name) =< 0 | "" | false |
+|        | Namespace (string)| len(namespace) > 0 | namespace == UD namespace| true |
+|        |                   |                    | namespace != UD namespace| false |
+|        |                   | len(namespace) =< 0 | "" | false |
 
 #### spireClusterRoleDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
 | clusterRole |  &rbacv1.ClusterRole | | | |
 |        | Rules       | | | |
-|        | clusterRole.Name (string)       | | | |
-|        | clusterRole.Kind (string)       | | | |
-|        | clusterRole.APIVersion (string) | | | |
+|        | clusterRole.Name (string)       | name == "spire-server-trust-role"| "spire-server-trust-role"| true |
+|        |                                 | name != "spire-server-trust-role"| "anythingElse"| false |
+|        | clusterRole.Kind (string)       | Kind == "ClusterRole" | "ClusterRole" |true |
+|        |                                 | Kind != "ClusterRole" | "anythingElse" |false |
+|        | clusterRole.APIVersion (string) | APIVersion == "rbac.authorization.k8s.io/v1"| "rbac.authorization.k8s.io/v1"| true |
+|        |                                 | APIVersion != "rbac.authorization.k8s.io/v1"| "anythingElse"| false |
 | Rules  | rbacv1.PolicyRule     | | | |
-|        | Verbs ([]string)  | | | |
-|        | Resources ([]string)      | | | |
-|        | APIGroups ([]string)       | | | |
+|        | Verbs ([]string) | len(Verbs) == 1 | []string{"create"} | true |
+|        |                  |                 | []string{"addams", "get", "list"}| false |
+|        |                  | len(Verbs) != 1 | []string{"get", "list"} | false|
+|        | Resources ([]string) | len(Resources) == 1 | []string{"tokenreviews"} | true |
+|        |                      |                     | []string{"whatnot"} | false |
+|        |                      | len(Resources) != 1 | []string{}| false |
+|        | APIGroups ([]string) | len(APIGroups) == 1 | []string{"authentication.k8s.io"} | true |
+|        |                      |                     | []string{"blah"}| false |
+|        |                      | len(APIGroups) != 1 | []string{}| false |
+
 
 
 #### spireClusterRoleBindingDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
-| serverRole |  &rbacv1.RoleBinding | | | |
+| clusterRoleBinding |  &rbacv1.RoleBinding | | | |
 |        | RoleRef       | | | |
 |        | Subjects       | | | |
-|        | serverRole.Name (string)       | | | |
-|        | serverRole.Kind (string)       | | | |
-|        | serverRole.APIVersion (string) | | | |
+|        | clusterRoleBinding.Name (string)       | name == "spire-server-trust-role-binding"| "spire-server-trust-role-binding"| true |
+|        |                                        | name != "spire-server-trust-role-binding"| "anythingElse"| false |
+|        | clusterRoleBinding.Kind (string)       | Kind == "ClusterRoleBinding" | "ClusterRoleBinding" |true |
+|        |                                        | Kind != "ClusterRoleBinding" | "anythingElse" |false |
+|        | clusterRoleBinding.APIVersion (string) | APIVersion == "rbac.authorization.k8s.io/v1"| "rbac.authorization.k8s.io/v1"| true |
+|        |                                        | APIVersion != "rbac.authorization.k8s.io/v1"| "anythingElse"| false |
 | RoleRef  | rbacv1.RoleRef     | | | |
-|        | Kind (string)  | | | |
-|        | Name (string)      | | | |
-|        | APIGroups (string)       | | | |
+|        | Name (string)     | name == "spire-server-trust-role"| "spire-server-trust-role"| true |
+|        |                   | name != "spire-server-trust-role"| "anythingElse"| false |
+|        | Kind (string)     | Kind == "ClusterRole" | "ClusterRole" |true |
+|        |                   | Kind != "ClusterRole" | "anythingElse" |false |
+|        | APIGroup (string) | APIVersion == "rbac.authorization.k8s.io/v1"| "rbac.authorization.k8s.io/v1"| true |
+|        |                   | APIVersion != "rbac.authorization.k8s.io/v1"| "anythingElse"| false |
 | Subject  | rbacv1.Subject     | | | |
-|        | Kind (string)  | | | |
-|        | Name (string)      | | | |
-|        | Namespace (string)      | | | |
+|        | Kind (string)     | Kind == "ServiceAccount"| "ServiceAccount" | true |
+|        |                   | Kind != "ServiceAccount"|"anythingElse" | false |
+|        | Name (string)     |len(name) > 0 | name == "spire-server" | true |
+|        |                   |                    | namespace != "spire-server"| false |
+|        |                   | len(name) =< 0 | "" | false |
+|        | Namespace (string)| len(namespace) > 0 | namespace == UD namespace| true |
+|        |                   |                    | namespace != UD namespace| false |
+|        |                   | len(namespace) =< 0 | "" | false |
 
 #### spireConfigMapDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
