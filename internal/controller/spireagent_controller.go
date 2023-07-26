@@ -96,7 +96,7 @@ func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx conte
 
 	match := false
 	for _, nodeAttestor := range serverNodeAttestors {
-		if strings.Compare(nodeAttestor, nodeAttestor) == 0 {
+		if strings.Compare(a.Spec.NodeAttestor, nodeAttestor) == 0 {
 			match = true
 			break
 		}
@@ -114,10 +114,10 @@ func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx conte
 				break
 			}
 		}
-	}
 
-	if !match {
-		return errors.New("incorrect workload attestors list inputted: at least one of the specified workload attestors is not supported")
+		if !match {
+			return errors.New("incorrect workload attestors list inputted: at least one of the specified workload attestors is not supported")
+		}
 	}
 
 	if !((strings.Compare("disk", strings.ToLower(a.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(a.Spec.KeyStorage)) == 0)) {
