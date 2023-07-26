@@ -1,0 +1,6 @@
+apiVersion: spire.hpe.com/v1
+kind: SpireServer
+metadata:
+  name: invalid-spire-server
+spec:
+  # empty fields; CRD instance should be deleted

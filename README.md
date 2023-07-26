@@ -27,6 +27,6 @@ The operator is designed to control/manage the same Kubernetes cluster where the
 
 ## Documentation
 
-- [Getting Started Guide](docs/getting_started.md)
+- [Getting Started Guide](docs/getting-started.md)
 - [SPIRE Server CRD Configuration Reference](docs/spireserver-crd.md)
 - [Design Document](https://docs.google.com/document/d/1F7h9khGMh2wz6tED40TXQH3wUlLYr-6FEt-Cukk3MnA/edit?usp=sharing)

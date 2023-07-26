@@ -33,7 +33,6 @@ type SpireServerSpec struct {
 
 	NodeAttestors []string `json:"nodeAttestors"`
 
-	// ServerDataPath string `json:"serverDataPath"` unsure how this would be validated so omitted for now
 	KeyStorage string `json:"keyStorage"`
 
 	Replicas int `json:"replicas"`
