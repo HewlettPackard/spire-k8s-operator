@@ -36,6 +36,10 @@ type SpireServerSpec struct {
 	KeyStorage string `json:"keyStorage"`
 
 	Replicas int `json:"replicas"`
+
+	DataStore string `json:"dataStore"`
+
+	ConnectionString string `json:"connectionString"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer
