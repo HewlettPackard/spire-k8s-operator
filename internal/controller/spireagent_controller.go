@@ -20,6 +20,7 @@ import (
 	"context"
 
 	rbacv1 "k8s.io/api/rbac/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -55,9 +56,11 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// TODO(user): your logic here
 	clusterRole := r.agentClusterRoleDeployment()
 	clusterRoleBinding := r.agentClusterRoleBindingDeployment(req.Namespace)
+	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
 
 	components := map[string]interface{}{
-		"clusterRole":        clusterRole,
+		"serviceAccount": serviceAccount,
+    "clusterRole":        clusterRole,
 		"clusterRoleBinding": clusterRoleBinding,
 	}
 
@@ -116,6 +119,20 @@ func (r *SpireAgentReconciler) agentClusterRoleBindingDeployment(namespace strin
 		},
 	}
 	return clusterRoleBinding
+}
+
+func (r *SpireAgentReconciler) agentServiceAccountDeployment(namespace string) *corev1.ServiceAccount {
+	serviceAccount := &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-agent",
+			Namespace: namespace,
+		},
+	}
+	return serviceAccount
 }
 
 // SetupWithManager sets up the controller with the Manager.
