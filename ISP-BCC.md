@@ -7,7 +7,7 @@ In the context of software testing and validation, input space partitioning is o
 
 Base choice coverage is a testing criterion that focuses on testing the various combinations of independent options or configurations within a system. It aims to ensure that all critical combinations of base choices are considered during testing, without the need to exhaustively test all possible combinations. We will use our partitions from ISP to create our combinations for our BCC testing.
 
-### Reconcile
+### Reconcile(ctx context.Context, req ctrl.Request)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | server | *spirev1.SpireServer       | | | |
