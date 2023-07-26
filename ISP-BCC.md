@@ -7,25 +7,26 @@ In the context of software testing and validation, input space partitioning is o
 
 Base choice coverage is a testing criterion that focuses on testing the various combinations of independent options or configurations within a system. It aims to ensure that all critical combinations of base choices are considered during testing, without the need to exhaustively test all possible combinations. We will use our partitions from ISP to create our combinations for our BCC testing.
 
-
-
+### Reconcile
+| Parameter   | Type  | Partition   | Value  | Expected Output |
+|---|---|---|---|---|
+| server | *spirev1.SpireServer       | | | |
+|        | server.Namespace (string)  | | | |
+|        | server.Name (string)       | | | |
 
 #### validateYaml()
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-#### createServiceAccount(server *spirev1.SpireServer, namespace string)
+#### createServiceAccount(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-#### spireBundleDeployment(server *spirev1.SpireServer, namespace string)
+#### spireBundleDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
@@ -36,7 +37,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | bundle.Kind (string)       | | | |
 |        | bundle.APIVersion (string) | | | |
 
-#### spireRoleDeployment(server *spirev1.SpireServer, namespace string)
+#### spireRoleDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
@@ -64,7 +65,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        |                      |                     | []string{"blah"}| false |
 |        |                      | len(APIGroups) != 1 | []string{}| false |
 
-#### spireRoleBindingDeployment(server *spirev1.SpireServer, namespace string)
+#### spireRoleBindingDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
@@ -99,7 +100,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        |                   |                    | namespace != UD namespace| false |
 |        |                   | len(namespace) =< 0 | "" | false |
 
-#### spireClusterRoleDeployment(server *spirev1.SpireServer, namespace string)
+#### spireClusterRoleDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
@@ -126,7 +127,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 
 
 
-#### spireClusterRoleBindingDeployment(server *spirev1.SpireServer, namespace string)
+#### spireClusterRoleBindingDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
@@ -158,17 +159,17 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        |                   |                    | namespace != UD namespace| false |
 |        |                   | len(namespace) =< 0 | "" | false |
 
-#### spireConfigMapDeployment(server *spirev1.SpireServer, namespace string)
+#### spireConfigMapDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-#### spireStatefulSetDeployment(server *spirev1.SpireServer, namespace string)
+#### spireStatefulSetDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
 
-#### spireServiceDeployment(server *spirev1.SpireServer, namespace string)
+#### spireServiceDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
 | | | | | |
