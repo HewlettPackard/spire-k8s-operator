@@ -10,10 +10,21 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 
 
 
-#### validateYaml()
+#### validateYaml(s *spirev1.SpireServer)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| | | | | |
+|s| *spirev1.SpireServer| | | |
+|| s.Spec.TrustDomain (string)| s.Spec.TrustDomain == "" | SPIRE server exists | false |
+||| s.Spec.TrustDomain == "example.org" | SPIRE server exists | true |
+|| s.Spec.NodeAttestors ([]string)| contains(s.Spec.NodeAttestors, "aws_iid") | SPIRE server exists | false |
+||| s.Spec.NodeAttestors == {"k8s_sat"} | SPIRE server exists | true |
+|| s.Spec.KeyStorage (string)| s.Spec.KeyStorage == "drive" | SPIRE server exists | false |
+||| s.Spec.KeyStorage == "disk" | SPIRE server exists | true |
+|| s.Spec.Port (int)| s.Spec.Port == -1 | SPIRE server exists | false |
+||| s.Spec.Port == 8081 | SPIRE server exists | true |
+|| s.Spec.Replicas (int)| s.Spec.Replicas == -1 | SPIRE server exists | false |
+||| s.Spec.Replicas == 1 | SPIRE server exists | true |
+
 
 #### createServiceAccount(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
