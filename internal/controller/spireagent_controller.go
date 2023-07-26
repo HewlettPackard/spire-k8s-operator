@@ -53,6 +53,7 @@ type SpireAgentReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
 
 	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
 
@@ -74,7 +75,20 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	components := map[string]interface{}{
 		"agentDaemonSet": agentDaemonSet,
 	}
+	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
 
+	components := map[string]interface{}{
+		"serviceAccount": serviceAccount,
+	}
+
+	for key, value := range components {
+		err := r.Create(ctx, value.(client.Object))
+		result, createError := checkIfFailToCreate(err, key, logger)
+		if createError != nil {
+			err = createError
+			return result, err
+		}
+	}
 	for key, value := range components {
 		err = r.Create(ctx, value.(client.Object))
 		result, createError := checkIfFailToCreate(err, key, logger)
