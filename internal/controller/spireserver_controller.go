@@ -90,23 +90,23 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	serviceAccount := r.createServiceAccount(spireserver, req.Namespace)
+	serviceAccount := r.createServiceAccount(req.Namespace)
 
-	bundle := r.spireBundleDeployment(spireserver, req.Namespace)
+	bundle := r.spireBundleDeployment(req.Namespace)
 
-	roles := r.spireRoleDeployment(spireserver, req.Namespace)
+	roles := r.spireRoleDeployment(req.Namespace)
 
-	roleBinding := r.spireRoleBindingDeployment(spireserver, req.Namespace)
+	roleBinding := r.spireRoleBindingDeployment(req.Namespace)
 
-	clusterRoles := r.spireClusterRoleDeployment(spireserver, req.Namespace)
+	clusterRoles := r.spireClusterRoleDeployment(req.Namespace)
 
-	clusterRoleBinding := r.spireClusterRoleBindingDeployment(spireserver, req.Namespace)
+	clusterRoleBinding := r.spireClusterRoleBindingDeployment(req.Namespace)
 
 	serverConfigMap := r.spireConfigMapDeployment(spireserver, req.Namespace)
 
-	spireStatefulSet := r.spireStatefulSetDeployment(spireserver, req.Namespace)
+	spireStatefulSet := r.spireStatefulSetDeployment(spireserver.Spec.Replicas, req.Namespace)
 
-	spireService := r.spireServiceDeployment(spireserver, req.Namespace)
+	spireService := r.spireServiceDeployment(spireserver.Spec.Port, req.Namespace)
 
 	components := map[string]interface{}{
 		"serviceAccount":     serviceAccount,
@@ -187,7 +187,7 @@ func checkTrustDomain(trustDomain string, invalidTrustDomain *bool) {
 	*invalidTrustDomain = false
 }
 
-func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRoleBinding {
+func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(namespace string) *rbacv1.ClusterRoleBinding {
 	subject := rbacv1.Subject{
 		Kind:      "ServiceAccount",
 		Name:      "spire-server",
@@ -214,7 +214,7 @@ func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(m *spirev1.Spi
 	return clusterRoleBinding
 }
 
-func (r *SpireServerReconciler) spireRoleBindingDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.RoleBinding {
+func (r *SpireServerReconciler) spireRoleBindingDeployment(namespace string) *rbacv1.RoleBinding {
 	subject := rbacv1.Subject{
 		Kind:      "ServiceAccount",
 		Name:      "spire-server",
@@ -243,7 +243,7 @@ func (r *SpireServerReconciler) spireRoleBindingDeployment(m *spirev1.SpireServe
 
 }
 
-func (r *SpireServerReconciler) spireClusterRoleDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.ClusterRole {
+func (r *SpireServerReconciler) spireClusterRoleDeployment(namespace string) *rbacv1.ClusterRole {
 	rules := rbacv1.PolicyRule{
 		Verbs:     []string{"create"},
 		Resources: []string{"tokenreviews"},
@@ -265,7 +265,7 @@ func (r *SpireServerReconciler) spireClusterRoleDeployment(m *spirev1.SpireServe
 	return clusterRole
 }
 
-func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, namespace string) *rbacv1.Role {
+func (r *SpireServerReconciler) spireRoleDeployment(namespace string) *rbacv1.Role {
 	rules := rbacv1.PolicyRule{
 		Verbs:     []string{"patch", "get", "list"},
 		Resources: []string{"configmaps"},
@@ -288,7 +288,7 @@ func (r *SpireServerReconciler) spireRoleDeployment(m *spirev1.SpireServer, name
 	return serverRole
 }
 
-func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, namespace string) *corev1.ConfigMap {
+func (r *SpireServerReconciler) spireBundleDeployment(namespace string) *corev1.ConfigMap {
 	bundle := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -302,9 +302,9 @@ func (r *SpireServerReconciler) spireBundleDeployment(m *spirev1.SpireServer, na
 	return bundle
 }
 
-func (r *SpireServerReconciler) spireStatefulSetDeployment(m *spirev1.SpireServer, namespace string) *appsv1.StatefulSet {
+func (r *SpireServerReconciler) spireStatefulSetDeployment(replicas int, namespace string) *appsv1.StatefulSet {
 	// need to pass in the user desired specs like number of replicas, desired Vols to be mounted, probings,etc.. here
-	var numReplicas int32 = int32(m.Spec.Replicas)
+	var numReplicas int32 = int32(replicas)
 	labelSelector := metav1.LabelSelector{MatchLabels: map[string]string{"app": "spire-server"}}
 	volMount1 := corev1.VolumeMount{
 		Name:      "spire-config",
@@ -394,7 +394,7 @@ func (r *SpireServerReconciler) spireStatefulSetDeployment(m *spirev1.SpireServe
 	return spireStatefulSet
 }
 
-func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, namespace string) *corev1.Service {
+func (r *SpireServerReconciler) spireServiceDeployment(port int, namespace string) *corev1.Service {
 	// need to pass in the user desired specs like port type,ports,selectors here
 	serviceSpec := corev1.ServiceSpec{
 		Type:     corev1.ServiceType("NodePort"),
@@ -416,7 +416,7 @@ func (r *SpireServerReconciler) spireServiceDeployment(m *spirev1.SpireServer, n
 }
 
 // CreateServiceAccount creates a service account for the SPIRE server.
-func (r *SpireServerReconciler) createServiceAccount(m *spirev1.SpireServer, namespace string) *corev1.ServiceAccount {
+func (r *SpireServerReconciler) createServiceAccount(namespace string) *corev1.ServiceAccount {
 	serviceAccount := &corev1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceAccount",
