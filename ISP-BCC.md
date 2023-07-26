@@ -7,8 +7,12 @@ In the context of software testing and validation, input space partitioning is o
 
 Base choice coverage is a testing criterion that focuses on testing the various combinations of independent options or configurations within a system. It aims to ensure that all critical combinations of base choices are considered during testing, without the need to exhaustively test all possible combinations. We will use our partitions from ISP to create our combinations for our BCC testing.
 
-
-
+#### Reconcile()
+| Parameter   | Type  | Partition    | Value | Expected Output |
+|---|---|---|---|---|
+| server   | *spirev1.SpireServer       | | | |
+|          | server.Namespace (string)  | | | |
+|          | server.Name (string)       | | | |
 
 #### validateYaml()
 | Parameter   | Type  | Partition   | Value  | Expected Output |
@@ -21,27 +25,25 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 | | | | | |
 
 #### spireBundleDeployment(server *spirev1.SpireServer, namespace string)
-| Parameter   | Type  | Partition   | Value  | Expected Output |
+| Parameter   | Type  | Partition    | Value | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
-| namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
-|           |       |                    | namespace != UD namespace| false |
-|           |       | len(namespace) =< 0 | "" | false |
-| bundle | &corev1.ConfigMap | | | |
-|        | bundle.Name (string)       | | | |
-|        | bundle.Namespace (string)  | | | |
-|        | bundle.Name (string)       | | | |
-|        | bundle.Kind (string)       | | | |
-|        | bundle.APIVersion (string) | | | |
+| namespace| string | len(namespace) > 0 | namespace == UD namespace| UD namespace | true |
+|          |        |                    | namespace != UD namespace|  "anythingelse" | false |
+|          |       | len(namespace) =< 0 | namespace == "" | "" | false |
+| bundle | &corev1.ConfigMap          | typeOf(bundle) != corev1 | &rbacv1.Role  | false |
+|        |                            | typeOf(bundle) == corev1 | &corev1.ConfigMap | true |
+|        | bundle.Name (string)       | name == UD name| UD name | true |
+|        |                            | name != UD name| "anythingelse" | false |
+|        | bundle.Namespace (string)  | namespace == UD namespace| UD namespace | true |
+|        |                            | namespace != UD namespace|  "anythingelse" | false |
+|        | bundle.Kind (string)       | Kind != "ConfigMap" | "NotRightValue" | fase |
+|        |                            | Kind == "ConfigMap" | "ConfigMap" | true |
+|        | bundle.APIVersion (string) | APIVersion != "v1" | "NotRightValue" | fase |
+|        |                            | APIVersion == "v1" | "v1" | true |
 
 #### spireRoleDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
@@ -59,9 +61,6 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 #### spireRoleBindingDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
@@ -84,9 +83,6 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 #### spireClusterRoleDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
@@ -104,9 +100,6 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 #### spireClusterRoleBindingDeployment(server *spirev1.SpireServer, namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
-| server | *spirev1.SpireServer       | | | |
-|        | server.Namespace (string)  | | | |
-|        | server.Name (string)       | | | |
 | namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
 |           |       |                    | namespace != UD namespace| false |
 |           |       | len(namespace) =< 0 | "" | false |
