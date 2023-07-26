@@ -55,8 +55,6 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	_ = log.FromContext(ctx)
 	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
 
-	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
-
 	agent := &spirev1.SpireAgent{}
 
 	// fetching SPIRE Agent instance
@@ -71,14 +69,12 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	agentDaemonSet := r.agentDaemonSetDeployment(agent, req.Namespace)
-	components := map[string]interface{}{
-		"agentDaemonSet": agentDaemonSet,
-	}
 	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
+	agentDaemonSet := r.agentDaemonSetDeployment(agent, req.Namespace)
 
 	components := map[string]interface{}{
 		"serviceAccount": serviceAccount,
+		"agentDaemonSet": agentDaemonSet,
 	}
 
 	for key, value := range components {
@@ -89,15 +85,22 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return result, err
 		}
 	}
-	for key, value := range components {
-		err = r.Create(ctx, value.(client.Object))
-		result, createError := checkIfFailToCreate(err, key, logger)
-		if createError != nil {
-			err = createError
-			return result, err
-		}
-	}
+
 	return ctrl.Result{}, nil
+}
+
+func (r *SpireAgentReconciler) agentServiceAccountDeployment(namespace string) *corev1.ServiceAccount {
+	serviceAccount := &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-agent",
+			Namespace: namespace,
+		},
+	}
+	return serviceAccount
 }
 
 func (r *SpireAgentReconciler) agentDaemonSetDeployment(a *spirev1.SpireAgent, namespace string) *appsv1.DaemonSet {
