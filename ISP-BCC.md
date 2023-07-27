@@ -14,6 +14,7 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | server.Namespace (string)  | | | |
 |        | server.Name (string)       | | | |
 
+
 #### validateYaml()
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
@@ -25,17 +26,21 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 | | | | | |
 
 #### spireBundleDeployment(namespace string)
-| Parameter   | Type  | Partition   | Value  | Expected Output |
+| Parameter   | Type  | Partition    | Value | Expected Output |
 |---|---|---|---|---|
-| namespace| string | len(namespace) > 0 | namespace == UD namespace| true |
-|           |       |                    | namespace != UD namespace| false |
-|           |       | len(namespace) =< 0 | "" | false |
-| bundle | &corev1.ConfigMap | | | |
-|        | bundle.Name (string)       | | | |
-|        | bundle.Namespace (string)  | | | |
-|        | bundle.Name (string)       | | | |
-|        | bundle.Kind (string)       | | | |
-|        | bundle.APIVersion (string) | | | |
+| namespace| string | len(namespace) > 0 | namespace == UD namespace| UD namespace | true |
+|          |        |                    | namespace != UD namespace|  "anythingelse" | false |
+|          |       | len(namespace) =< 0 | namespace == "" | "" | false |
+| bundle | &corev1.ConfigMap          | typeOf(bundle) != corev1 | &rbacv1.Role  | false |
+|        |                            | typeOf(bundle) == corev1 | &corev1.ConfigMap | true |
+|        | bundle.Name (string)       | name == UD name| UD name | true |
+|        |                            | name != UD name| "anythingelse" | false |
+|        | bundle.Namespace (string)  | namespace == UD namespace| UD namespace | true |
+|        |                            | namespace != UD namespace|  "anythingelse" | false |
+|        | bundle.Kind (string)       | Kind != "ConfigMap" | "NotRightValue" | fase |
+|        |                            | Kind == "ConfigMap" | "ConfigMap" | true |
+|        | bundle.APIVersion (string) | APIVersion != "v1" | "NotRightValue" | fase |
+|        |                            | APIVersion == "v1" | "v1" | true |
 
 #### spireRoleDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
@@ -55,15 +60,6 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | serverRole.APIVersion (string) | APIVersion == "rbac.authorization.k8s.io/v1"| "rbac.authorization.k8s.io/v1"| true |
 |        |                                | APIVersion != "rbac.authorization.k8s.io/v1"| "anythingElse"| false |
 | Rules  | rbacv1.PolicyRule     | | | |
-|        | Verbs ([]string) | len(Verbs) >= 3 | []string{"patch", "get", "list"}| true |
-|        |                  |                 | []string{"addams", "get", "list"}| false |
-|        |                  | len(Verbs) < 3  | []string{"get", "list"} | false|
-|        | Resources ([]string) | len(Resources) == 1 | []string{"configmaps"} | true |
-|        |                      |                     | []string{"whatnot"} | false |
-|        |                      | len(Resources) != 1 | []string{}| false |
-|        | APIGroups ([]string) | len(APIGroups) == 1 | []string{""}| true |
-|        |                      |                     | []string{"blah"}| false |
-|        |                      | len(APIGroups) != 1 | []string{}| false |
 
 #### spireRoleBindingDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
@@ -124,8 +120,6 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | APIGroups ([]string) | len(APIGroups) == 1 | []string{"authentication.k8s.io"} | true |
 |        |                      |                     | []string{"blah"}| false |
 |        |                      | len(APIGroups) != 1 | []string{}| false |
-
-
 
 #### spireClusterRoleBindingDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
