@@ -21,8 +21,8 @@ import (
 	"errors"
 	"strings"
 
-
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	rbacv1 "k8s.io/api/rbac/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -81,10 +81,14 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
+	clusterRole := r.agentClusterRoleDeployment()
+	clusterRoleBinding := r.agentClusterRoleBindingDeployment(req.Namespace)
 	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
 
 	components := map[string]interface{}{
 		"serviceAccount": serviceAccount,
+    "clusterRole":        clusterRole,
+		"clusterRoleBinding": clusterRoleBinding,
 	}
 
 	for key, value := range components {
@@ -96,6 +100,54 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 	return ctrl.Result{}, nil
+}
+
+func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole {
+	rules := rbacv1.PolicyRule{
+		Verbs:     []string{"get"},
+		Resources: []string{"pods", "nodes", "nodes/proxy"},
+		APIGroups: []string{""},
+	}
+	clusterRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-agent-cluster-role",
+		},
+		Rules: []rbacv1.PolicyRule{
+			rules,
+		},
+	}
+	return clusterRole
+}
+
+func (r *SpireAgentReconciler) agentClusterRoleBindingDeployment(namespace string) *rbacv1.ClusterRoleBinding {
+	subject := rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "spire-agent",
+		Namespace: namespace,
+	}
+
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-agent-cluster-role-binding",
+		},
+		Subjects: []rbacv1.Subject{
+			subject,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "spire-agent-cluster-role",
+		},
+	}
+	return clusterRoleBinding
 }
 
 func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx context.Context) error {
