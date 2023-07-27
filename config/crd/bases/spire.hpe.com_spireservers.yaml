@@ -15,7 +15,11 @@ spec:
     singular: spireserver
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.health
+      name: Health
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: SpireServer is the Schema for the spireservers API
@@ -35,7 +39,13 @@ spec:
           spec:
             description: SpireServerSpec defines the desired state of SpireServer
             properties:
+              connectionString:
+                type: string
+              dataStore:
+                type: string
               keyStorage:
+                description: ServerDataPath string `json:"serverDataPath"` unsure
+                  how this would be validated so omitted for now
                 type: string
               nodeAttestors:
                 items:
@@ -50,6 +60,8 @@ spec:
                   Important: Run "make" to regenerate code after modifying this file'
                 type: string
             required:
+            - connectionString
+            - dataStore
             - keyStorage
             - nodeAttestors
             - port

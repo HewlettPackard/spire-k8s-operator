@@ -33,12 +33,13 @@ type SpireServerSpec struct {
 
 	NodeAttestors []string `json:"nodeAttestors"`
 
-	// ServerDataPath string `json:"serverDataPath"` unsure how this would be validated so omitted for now
-	// default datastore is sqlite so no config for that
-
 	KeyStorage string `json:"keyStorage"`
 
 	Replicas int `json:"replicas"`
+
+	DataStore string `json:"dataStore"`
+
+	ConnectionString string `json:"connectionString"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer
@@ -50,6 +51,7 @@ type SpireServerStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Health",type=string,JSONPath=`.status.health`
 
 // SpireServer is the Schema for the spireservers API
 type SpireServer struct {
