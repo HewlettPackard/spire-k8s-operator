@@ -16,6 +16,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
 )
 
 var _ = Describe("SpireServer controller", func() {
@@ -522,6 +524,171 @@ var _ = Describe("SpireServer controller", func() {
 			Expect(createdStatefulSet.Spec.Template.Spec.Containers[0].VolumeMounts[1]).Should(Equal(volMount2))
 			Expect(createdStatefulSet.Spec.Template.Spec.Volumes[0].VolumeSource.ConfigMap.LocalObjectReference.Name).Should(Equal("spire-config-map"))
 			Expect(*createdStatefulSet.Spec.Selector).Should(Equal(labelSelector))
+		})
+	})
+
+	serverTypeMeta := metav1.TypeMeta{
+		APIVersion: "spire.hpe.com/v1",
+		Kind:       "SpireServer",
+	}
+	serverObjectMeta := metav1.ObjectMeta{
+		Name:      "invalid-spire-server",
+		Namespace: "default",
+	}
+	Context("When creating SPIRE server with invalid/empty trust domain", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:   "",
+					Port:          8081,
+					NodeAttestors: []string{"k8s_sat"},
+					KeyStorage:    "disk",
+					Replicas:      1,
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should delete the CRD instance created", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with unsupported node attestors", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:   "example.org",
+					Port:          8081,
+					NodeAttestors: []string{"k8s_sat", "aws_iid"},
+					KeyStorage:    "disk",
+					Replicas:      1,
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should delete the CRD instance created", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with incorrect key storage", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:   "example.org",
+					Port:          8081,
+					NodeAttestors: []string{"k8s_sat"},
+					KeyStorage:    "drive",
+					Replicas:      1,
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should delete the CRD instance created", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with invalid port number", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:   "example.org",
+					Port:          -1,
+					NodeAttestors: []string{"k8s_sat"},
+					KeyStorage:    "disk",
+					Replicas:      1,
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should delete the CRD instance created", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with invalid replicas", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:   "example.org",
+					Port:          8081,
+					NodeAttestors: []string{"k8s_sat"},
+					KeyStorage:    "disk",
+					Replicas:      -1,
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should delete the CRD instance created", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with all valid fields", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:   "example.org",
+					Port:          8081,
+					NodeAttestors: []string{"k8s_sat"},
+					KeyStorage:    "disk",
+					Replicas:      1,
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should create and NOT delete the CRD instance", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
 		})
 	})
 })
