@@ -4,10 +4,10 @@
 * Automation to test and build artifacts using GitHub Actions
 
 ## Recently Completed
-PoC goal has been completed
+* PoC goal has been completed
+* Various Data Store options
 
 ## Near-Term and Medium-Term
-* Various Data Store options
 * Spire Agent Operator
 
 ## Long-Term
