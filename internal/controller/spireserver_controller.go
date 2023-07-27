@@ -50,6 +50,8 @@ type SpireServerReconciler struct {
 
 var (
 	supportedNodeAttestors = []string{"k8s_psat", "k8s_sat", "join_token"}
+	serverNodeAttestors    []string
+	serverPort             int
 	supportedDataStores    = []string{"sqlite3", "postgres", "mysql"}
 )
 
@@ -150,6 +152,8 @@ func validateYaml(s *spirev1.SpireServer) error {
 
 	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535) {
 		return errors.New("invalid port number") //TODO: should we restrict to other ports? This is basic for all ports.
+	} else {
+		serverPort = s.Spec.Port
 	}
 
 	var match bool
@@ -165,6 +169,8 @@ func validateYaml(s *spirev1.SpireServer) error {
 
 	if !match {
 		return errors.New("incorrect node attestors list inputted: at least one of the specified node attestors is not supported")
+	} else {
+		serverNodeAttestors = s.Spec.NodeAttestors
 	}
 
 	if !((strings.Compare("disk", strings.ToLower(s.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.KeyStorage)) == 0)) {

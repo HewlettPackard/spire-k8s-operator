@@ -1,0 +1,12 @@
+apiVersion: spire.hpe.com/v1
+kind: SpireAgent
+metadata:
+  name: invalid-spire-agent
+spec:
+  trustDomain: ""
+  nodeAttestor: k8s_sat
+  workloadAttestors: 
+    - k8s
+    - unix
+  keyStorage: memory
+  serverPort: 8081
