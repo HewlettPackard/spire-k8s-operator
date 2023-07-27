@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
+	"golang.org/x/exp/slices"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -51,6 +52,7 @@ var (
 	supportedNodeAttestors = []string{"k8s_psat", "k8s_sat", "join_token"}
 	serverNodeAttestors    []string
 	serverPort             int
+	supportedDataStores    = []string{"sqlite3", "postgres", "mysql"}
 )
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
@@ -177,6 +179,18 @@ func validateYaml(s *spirev1.SpireServer) error {
 
 	if s.Spec.Replicas <= 0 {
 		return errors.New("at least one replica needs to exist")
+	}
+
+	if !(slices.Contains(supportedDataStores, strings.ToLower(s.Spec.DataStore))) {
+		return errors.New("invalid datastore: supported datastores are sqlite3, postgres, and mysql")
+	}
+
+	if (strings.Compare("sqlite3", strings.ToLower(s.Spec.DataStore)) == 0) && (s.Spec.Replicas > 1) {
+		return errors.New("cannot have more than 1 replica with sqlite3 database")
+	}
+
+	if len(s.Spec.ConnectionString) == 0 {
+		return errors.New("connection string cannot be empty")
 	}
 
 	return nil
@@ -450,7 +464,7 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 	}
 
 	config := serverCreation(strconv.Itoa(s.Spec.Port), s.Spec.TrustDomain) +
-		plugins(nodeAttestorsConfig, s.Spec.KeyStorage, namespace) +
+		plugins(nodeAttestorsConfig, s.Spec.KeyStorage, namespace, s.Spec.DataStore, s.Spec.ConnectionString) +
 		healthChecks()
 
 	configMap := &corev1.ConfigMap{
@@ -530,14 +544,14 @@ func serverCreation(bindingPort string, trustDomain string) string {
 	}`
 }
 
-func plugins(nodeAttestorsConfig string, keyStorage string, namespace string) string {
+func plugins(nodeAttestorsConfig string, keyStorage string, namespace string, datastore string, connectionString string) string {
 	return `
 
 	plugins {
 		DataStore "sql" {
 			plugin_data {
-			  database_type = "sqlite3"
-			  connection_string = "/run/spire/data/datastore.sqlite3"
+			  database_type = "` + datastore + `"
+			  connection_string = "` + connectionString + `"
 			}
 		}` +
 		nodeAttestorsConfig + `

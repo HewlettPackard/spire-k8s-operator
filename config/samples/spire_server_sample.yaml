@@ -9,3 +9,5 @@ spec:
     - k8s_sat
   keyStorage: disk
   replicas: 1
+  dataStore: sqlite3
+  connectionString: /run/spire/data/datastore.sqlite3
