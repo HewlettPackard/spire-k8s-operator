@@ -21,10 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
-	rbacv1 "k8s.io/api/rbac/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -74,13 +73,13 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	clusterRole := r.agentClusterRoleDeployment()
 	clusterRoleBinding := r.agentClusterRoleBindingDeployment(req.Namespace)
 	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
-  agentConfigMap := r.agentConfigMapDeployment(agent, req.Namespace)
+	agentConfigMap := r.agentConfigMapDeployment(agent, req.Namespace)
 
 	components := map[string]interface{}{
-		"serviceAccount": serviceAccount,
-    "clusterRole":        clusterRole,
+		"serviceAccount":     serviceAccount,
+		"clusterRole":        clusterRole,
 		"clusterRoleBinding": clusterRoleBinding,
-    "agentConfigMap": agentConfigMap,
+		"agentConfigMap":     agentConfigMap,
 	}
 
 	for key, value := range components {
@@ -91,8 +90,10 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return result, err
 		}
 	}
+
 	return ctrl.Result{}, nil
 }
+
 func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole {
 	rules := rbacv1.PolicyRule{
 		Verbs:     []string{"get"},
@@ -113,6 +114,7 @@ func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole 
 	}
 	return clusterRole
 }
+
 func (r *SpireAgentReconciler) agentClusterRoleBindingDeployment(namespace string) *rbacv1.ClusterRoleBinding {
 	subject := rbacv1.Subject{
 		Kind:      "ServiceAccount",
