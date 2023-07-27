@@ -19,10 +19,11 @@ package controller
 import (
 	"context"
 	"errors"
-	"strings"
-	"golang.org/x/exp/slices"
 	"strconv"
-  
+	"strings"
+
+	"golang.org/x/exp/slices"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -84,7 +85,7 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		err = r.Delete(ctx, agent)
 		return ctrl.Result{}, err
 	}
-  
+
 	clusterRole := r.agentClusterRoleDeployment()
 	clusterRoleBinding := r.agentClusterRoleBindingDeployment(req.Namespace)
 	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
