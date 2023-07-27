@@ -21,9 +21,9 @@ import (
 	"errors"
 	"strings"
 
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
-	rbacv1 "k8s.io/api/rbac/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -86,8 +86,8 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
 
 	components := map[string]interface{}{
-		"serviceAccount": serviceAccount,
-    "clusterRole":        clusterRole,
+		"serviceAccount":     serviceAccount,
+		"clusterRole":        clusterRole,
 		"clusterRoleBinding": clusterRoleBinding,
 	}
 
@@ -99,6 +99,7 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return result, err
 		}
 	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -108,6 +109,7 @@ func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole 
 		Resources: []string{"pods", "nodes", "nodes/proxy"},
 		APIGroups: []string{""},
 	}
+
 	clusterRole := &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRole",
@@ -120,6 +122,7 @@ func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole 
 			rules,
 		},
 	}
+
 	return clusterRole
 }
 
@@ -147,6 +150,7 @@ func (r *SpireAgentReconciler) agentClusterRoleBindingDeployment(namespace strin
 			Name:     "spire-agent-cluster-role",
 		},
 	}
+
 	return clusterRoleBinding
 }
 
@@ -194,7 +198,7 @@ func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx conte
 
 	return nil
 }
-  
+
 func (r *SpireAgentReconciler) agentServiceAccountDeployment(namespace string) *corev1.ServiceAccount {
 	serviceAccount := &corev1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
