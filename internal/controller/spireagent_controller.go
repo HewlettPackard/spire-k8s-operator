@@ -20,13 +20,16 @@ import (
 	"context"
 	"errors"
 	"strings"
-
 	"golang.org/x/exp/slices"
+	"strconv"
+  
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -81,15 +84,19 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		err = r.Delete(ctx, agent)
 		return ctrl.Result{}, err
 	}
-
+  
 	clusterRole := r.agentClusterRoleDeployment()
 	clusterRoleBinding := r.agentClusterRoleBindingDeployment(req.Namespace)
 	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
+	agentConfigMap := r.agentConfigMapDeployment(agent, req.Namespace)
+	agentDaemonSet := r.agentDaemonSetDeployment(agent, req.Namespace)
 
 	components := map[string]interface{}{
 		"serviceAccount":     serviceAccount,
 		"clusterRole":        clusterRole,
 		"clusterRoleBinding": clusterRoleBinding,
+		"agentConfigMap":     agentConfigMap,
+		"agentDaemonSet":     agentDaemonSet,
 	}
 
 	for key, value := range components {
@@ -196,6 +203,273 @@ func (r *SpireAgentReconciler) agentServiceAccountDeployment(namespace string) *
 		},
 	}
 	return serviceAccount
+}
+
+func (r *SpireAgentReconciler) agentDaemonSetDeployment(a *spirev1.SpireAgent, namespace string) *appsv1.DaemonSet {
+	initContainer := corev1.Container{
+		Name:  "init",
+		Image: "cgr.dev/chainguard/wait-for-it",
+		Args:  []string{"-t", "30", "spire-service:8081"},
+	}
+
+	volMount1 := corev1.VolumeMount{
+		Name:      "spire-config",
+		MountPath: "/run/spire/config",
+		ReadOnly:  true,
+	}
+
+	volMount2 := corev1.VolumeMount{
+		Name:      "spire-bundle",
+		MountPath: "/run/spire/bundle",
+	}
+
+	volMount3 := corev1.VolumeMount{
+		Name:      "spire-agent-socket",
+		MountPath: "/run/spire/sockets",
+		ReadOnly:  false,
+	}
+
+	livenessProbe := corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{
+			Path: "/live", Port: intstr.IntOrString{IntVal: 8080}}},
+		FailureThreshold:    2,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       60,
+		TimeoutSeconds:      3,
+	}
+
+	readinessProbe := corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{
+			Path: "/ready", Port: intstr.IntOrString{IntVal: 8080}}},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+	}
+
+	container := corev1.Container{
+		Name:           "spire-agent",
+		Image:          "ghcr.io/spiffe/spire-agent:1.5.1",
+		Args:           []string{"-config", "/run/spire/config/agent.conf"},
+		VolumeMounts:   []corev1.VolumeMount{volMount1, volMount2, volMount3},
+		LivenessProbe:  &livenessProbe,
+		ReadinessProbe: &readinessProbe,
+	}
+
+	vol1 := corev1.Volume{
+		Name: "spire-config",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "spire-agent"},
+			},
+		},
+	}
+
+	vol2 := corev1.Volume{
+		Name: "spire-bundle",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "spire-bundle"},
+			},
+		},
+	}
+
+	var hostPathType corev1.HostPathType = "DirectoryOrCreate"
+
+	vol3 := corev1.Volume{
+		Name: "spire-agent-socket",
+		VolumeSource: corev1.VolumeSource{
+			HostPath: &corev1.HostPathVolumeSource{
+				Path: "/run/spire/sockets",
+				Type: &hostPathType,
+			},
+		},
+	}
+
+	agentPodSpec := corev1.PodSpec{
+		HostPID:            true,
+		HostNetwork:        true,
+		DNSPolicy:          "ClusterFirstWithHostNet",
+		ServiceAccountName: "spire-agent",
+		InitContainers:     []corev1.Container{initContainer},
+		Containers:         []corev1.Container{container},
+		Volumes:            []corev1.Volume{vol1, vol2, vol3},
+	}
+
+	daemonSetSpec := appsv1.DaemonSetSpec{
+		Selector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{"app": "spire-agent"},
+		},
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Labels:    map[string]string{"app": "spire-agent"},
+			},
+			Spec: agentPodSpec,
+		},
+	}
+
+	agentDaemonSet := &appsv1.DaemonSet{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "DaemonSet",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-agent",
+			Namespace: namespace,
+			Labels:    map[string]string{"app": "spire-agent"},
+		},
+		Spec: daemonSetSpec,
+	}
+
+	return agentDaemonSet
+}
+
+func (r *SpireAgentReconciler) agentConfigMapDeployment(a *spirev1.SpireAgent, namespace string) *corev1.ConfigMap {
+	nodeAttestorsConfig := ""
+
+	if strings.Compare(a.Spec.NodeAttestor, "join_token") == 0 {
+		nodeAttestorsConfig += joinTokenAgentNodeAttestor()
+	} else if strings.Compare(a.Spec.NodeAttestor, "k8s_sat") == 0 {
+		nodeAttestorsConfig += k8sSatAgentNodeAttestor()
+	} else if strings.Compare(a.Spec.NodeAttestor, "k8s_psat") == 0 {
+		nodeAttestorsConfig += k8sPsatAgentNodeAttestor()
+	}
+
+	workloadAttestorsConfig := ""
+	for _, wLAttestor := range a.Spec.WorkloadAttestors {
+		if strings.Compare(wLAttestor, "k8s") == 0 {
+			workloadAttestorsConfig += k8sWLAttestor()
+		} else if strings.Compare(wLAttestor, "unix") == 0 {
+			workloadAttestorsConfig += unixWLAttestor()
+		} else if strings.Compare(wLAttestor, "docker") == 0 {
+			workloadAttestorsConfig += dockerWLAttestor()
+		} else if strings.Compare(wLAttestor, "systemd") == 0 {
+			workloadAttestorsConfig += systemdWLAttestor()
+		} else if strings.Compare(wLAttestor, "windows") == 0 {
+			workloadAttestorsConfig += windowsWLAttestor()
+		}
+	}
+
+	config := agentCreation(strconv.Itoa(a.Spec.ServerPort), a.Spec.TrustDomain) +
+		pluginsAgent(nodeAttestorsConfig, a.Spec.KeyStorage, workloadAttestorsConfig) +
+		healthChecks()
+
+	configMap := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-agent",
+			Namespace: namespace,
+		},
+
+		Data: map[string]string{
+			"agent.conf": config,
+		},
+	}
+
+	return configMap
+}
+
+func joinTokenAgentNodeAttestor() string {
+	return `
+	NodeAttestor "join_token" {
+		plugin_data {
+
+		}
+	}`
+}
+
+func k8sSatAgentNodeAttestor() string {
+	return `
+	NodeAttestor "k8s_sat" {
+		plugin_data {
+			cluster = "demo-cluster"
+		}
+	}`
+}
+
+func k8sPsatAgentNodeAttestor() string {
+	return `
+	NodeAttestor "k8s_psat" {
+		plugin_data {
+			clusters = {
+				"cluster" = {
+		
+				}
+			}
+		}
+	}`
+}
+
+func agentCreation(port string, trustDomain string) string {
+	return `
+	agent {
+		data_dir = "/run/spire"
+		log_level = "DEBUG"
+		server_address = "spire-service"
+		server_port = "` + port + `"
+		socket_path = "/run/spire/sockets/agent.sock"
+		trust_bundle_path = "/run/spire/bundle/bundle.crt"
+		trust_domain = "` + trustDomain + `"
+	  }`
+}
+
+func pluginsAgent(nodeAttestorsConfig string, keyStorage string, workloadAttestorsConfig string) string {
+	return `
+
+	plugins {
+		` + nodeAttestorsConfig + `
+	
+		KeyManager "` + keyStorage + `" {
+			plugin_data {
+			}
+		} ` +
+		workloadAttestorsConfig + `
+	}`
+}
+
+func k8sWLAttestor() string {
+	return `
+
+	WorkloadAttestor "k8s" {
+		plugin_data {
+			skip_kubelet_verification = true
+		}
+	}`
+}
+
+func unixWLAttestor() string {
+	return `
+
+	WorkloadAttestor "unix" {
+		plugin_data {
+		}
+	}`
+}
+
+func dockerWLAttestor() string {
+	return `
+
+	WorkloadAttestor "docker" {
+		plugin_data {
+		}
+	}`
+}
+
+func systemdWLAttestor() string {
+	return `
+
+	WorkloadAttestor "systemd" {
+	}`
+}
+
+func windowsWLAttestor() string {
+	return `
+
+	WorkloadAttestor "windows" {
+	}`
 }
 
 // SetupWithManager sets up the controller with the Manager.
