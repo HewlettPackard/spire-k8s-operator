@@ -71,6 +71,15 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | serverRole.APIVersion (string) | APIVersion == "rbac.authorization.k8s.io/v1"| "rbac.authorization.k8s.io/v1"| true |
 |        |                                | APIVersion != "rbac.authorization.k8s.io/v1"| "anythingElse"| false |
 | Rules  | rbacv1.PolicyRule     | | | |
+|        | Verbs ([]string) | len(Verbs) >= 3 | []string{"patch", "get", "list"}| true |
+|        |                  |                 | []string{"addams", "get", "list"}| false |
+|        |                  | len(Verbs) < 3  | []string{"get", "list"} | false|
+|        | Resources ([]string) | len(Resources) == 1 | []string{"configmaps"} | true |
+|        |                      |                     | []string{"whatnot"} | false |
+|        |                      | len(Resources) != 1 | []string{}| false |
+|        | APIGroups ([]string) | len(APIGroups) == 1 | []string{""}| true |
+|        |                      |                     | []string{"blah"}| false |
+|        |                      | len(APIGroups) != 1 | []string{}| false |
 
 #### spireRoleBindingDeployment(namespace string)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
