@@ -21,6 +21,7 @@ import (
 	"errors"
 	"strings"
 
+	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -166,28 +167,12 @@ func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx conte
 		return errors.New("the inputted port does not correspond to a SPIRE server")
 	}
 
-	match := false
-	for _, nodeAttestor := range serverNodeAttestors {
-		if strings.Compare(a.Spec.NodeAttestor, nodeAttestor) == 0 {
-			match = true
-			break
-		}
-	}
-
-	if !match {
+	if !(slices.Contains(serverNodeAttestors, a.Spec.NodeAttestor)) {
 		return errors.New("the inputted node attestor is not supported by the server")
 	}
 
 	for _, currWLAttestor := range a.Spec.WorkloadAttestors {
-		match = false
-		for _, wLAttestor := range supportedWorkloadAttestors {
-			if strings.Compare(currWLAttestor, wLAttestor) == 0 {
-				match = true
-				break
-			}
-		}
-
-		if !match {
+		if !(slices.Contains(supportedWorkloadAttestors, currWLAttestor)) {
 			return errors.New("incorrect workload attestors list inputted: at least one of the specified workload attestors is not supported")
 		}
 	}
