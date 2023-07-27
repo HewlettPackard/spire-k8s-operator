@@ -18,8 +18,11 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
+
+	"golang.org/x/exp/slices"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,6 +43,10 @@ type SpireAgentReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+var (
+	supportedWorkloadAttestors = []string{"k8s", "unix", "docker", "systemd", "windows"}
+)
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents/status,verbs=get;update;patch
@@ -70,6 +77,13 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 		logger.Error(err, "Failed to get SPIRE Agent instance.")
 		return ctrl.Result{}, nil
+	}
+
+	err = validateAgentYaml(agent, r, ctx)
+	if err != nil {
+		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE agent. Deleting old instance of CRD.")
+		err = r.Delete(ctx, agent)
+		return ctrl.Result{}, err
 	}
 
 	clusterRole := r.agentClusterRoleDeployment()
@@ -104,6 +118,7 @@ func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole 
 		Resources: []string{"pods", "nodes", "nodes/proxy"},
 		APIGroups: []string{""},
 	}
+
 	clusterRole := &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRole",
@@ -116,6 +131,7 @@ func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole 
 			rules,
 		},
 	}
+
 	return clusterRole
 }
 
@@ -143,7 +159,37 @@ func (r *SpireAgentReconciler) agentClusterRoleBindingDeployment(namespace strin
 			Name:     "spire-agent-cluster-role",
 		},
 	}
+
 	return clusterRoleBinding
+}
+
+func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx context.Context) error {
+	invalidTrustDomain := false
+	checkTrustDomain(a.Spec.TrustDomain, &invalidTrustDomain)
+
+	if invalidTrustDomain {
+		return errors.New("trust domain is invalid")
+	}
+
+	if a.Spec.ServerPort != serverPort {
+		return errors.New("the inputted port does not correspond to a SPIRE server")
+	}
+
+	if !(slices.Contains(serverNodeAttestors, a.Spec.NodeAttestor)) {
+		return errors.New("the inputted node attestor is not supported by the server")
+	}
+
+	for _, currWLAttestor := range a.Spec.WorkloadAttestors {
+		if !(slices.Contains(supportedWorkloadAttestors, currWLAttestor)) {
+			return errors.New("incorrect workload attestors list inputted: at least one of the specified workload attestors is not supported")
+		}
+	}
+
+	if !((strings.Compare("disk", strings.ToLower(a.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(a.Spec.KeyStorage)) == 0)) {
+		return errors.New("generated key storage is only supported on disk or in memory")
+	}
+
+	return nil
 }
 
 func (r *SpireAgentReconciler) agentServiceAccountDeployment(namespace string) *corev1.ServiceAccount {
