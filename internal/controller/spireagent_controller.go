@@ -21,8 +21,10 @@ import (
 	"strconv"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
+
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	rbacv1 "k8s.io/api/rbac/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -53,7 +55,6 @@ type SpireAgentReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-
 	logger := log.Log.WithValues("SpireAgent", req.NamespacedName)
 
 	agent := &spirev1.SpireAgent{}
@@ -70,21 +71,87 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	agentConfigMap := r.agentConfigMapDeployment(agent, req.Namespace)
+	clusterRole := r.agentClusterRoleDeployment()
+	clusterRoleBinding := r.agentClusterRoleBindingDeployment(req.Namespace)
+	serviceAccount := r.agentServiceAccountDeployment(req.Namespace)
+  agentConfigMap := r.agentConfigMapDeployment(agent, req.Namespace)
+
 	components := map[string]interface{}{
-		"agentConfigMap": agentConfigMap,
+		"serviceAccount": serviceAccount,
+    "clusterRole":        clusterRole,
+		"clusterRoleBinding": clusterRoleBinding,
+    "agentConfigMap": agentConfigMap,
 	}
 
 	for key, value := range components {
-		err = r.Create(ctx, value.(client.Object))
+		err := r.Create(ctx, value.(client.Object))
 		result, createError := checkIfFailToCreate(err, key, logger)
 		if createError != nil {
 			err = createError
 			return result, err
 		}
 	}
-
 	return ctrl.Result{}, nil
+}
+func (r *SpireAgentReconciler) agentClusterRoleDeployment() *rbacv1.ClusterRole {
+	rules := rbacv1.PolicyRule{
+		Verbs:     []string{"get"},
+		Resources: []string{"pods", "nodes", "nodes/proxy"},
+		APIGroups: []string{""},
+	}
+	clusterRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-agent-cluster-role",
+		},
+		Rules: []rbacv1.PolicyRule{
+			rules,
+		},
+	}
+	return clusterRole
+}
+func (r *SpireAgentReconciler) agentClusterRoleBindingDeployment(namespace string) *rbacv1.ClusterRoleBinding {
+	subject := rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "spire-agent",
+		Namespace: namespace,
+	}
+
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "spire-agent-cluster-role-binding",
+		},
+		Subjects: []rbacv1.Subject{
+			subject,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "spire-agent-cluster-role",
+		},
+	}
+	return clusterRoleBinding
+}
+
+func (r *SpireAgentReconciler) agentServiceAccountDeployment(namespace string) *corev1.ServiceAccount {
+	serviceAccount := &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "spire-agent",
+			Namespace: namespace,
+		},
+	}
+	return serviceAccount
 }
 
 func (r *SpireAgentReconciler) agentConfigMapDeployment(a *spirev1.SpireAgent, namespace string) *corev1.ConfigMap {
