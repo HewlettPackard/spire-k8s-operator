@@ -182,7 +182,7 @@ func TestInvalidNameSpaceClusterRoles(t *testing.T) {
 		Scheme: scheme.Scheme,
 	}
 	clusterRoles := reconcilerForClusterRoles.spireClusterRoleDeployment("default1")
-	assert.NotEqual(t, clusterRoles.Namespace, "default2")
+	assert.Equal(t, clusterRoles.Namespace, "")
 }
 
 func TestEmptyNameSpaceClusterRoles(t *testing.T) {
@@ -196,4 +196,43 @@ func TestEmptyNameSpaceClusterRoles(t *testing.T) {
 	}
 	clusterRoles := reconcilerForClusterRoles.spireClusterRoleDeployment("")
 	assert.NotEqual(t, clusterRoles.Namespace, "")
+}
+
+func TestValidNameSpaceClusterRoleBinding(t *testing.T) {
+	reconcilerForClusterRoleBinding := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	clusterRoleBinding := reconcilerForClusterRoleBinding.spireClusterRoleDeployment("default")
+	assert.Equal(t, clusterRoleBinding.Namespace, "")
+}
+
+func TestInvalidNameSpaceClusterRoleBinding(t *testing.T) {
+	reconcilerForClusterRoleBinding := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	clusterRoleBinding := reconcilerForClusterRoleBinding.spireClusterRoleDeployment("default1")
+	assert.Equal(t, clusterRoleBinding.Namespace, "")
+}
+
+func TestEmptyNameSpaceClusterRoleBinding(t *testing.T) {
+	reconcilerForClusterRoleBinding := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	clusterRoleBinding := reconcilerForClusterRoleBinding.spireClusterRoleDeployment("")
+	assert.NotEqual(t, clusterRoleBinding.Namespace, "")
 }
