@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
@@ -77,4 +79,45 @@ func TestSpireserverController(t *testing.T) {
 	if spireService.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
 	}
+}
+
+func TestValidTrustBundle(t *testing.T) {
+	reconcilerForTrustBundle := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	spireServiceNamespace := "sameNameSpace"
+	bundle := reconcilerForTrustBundle.spireBundleDeployment(spireServiceNamespace)
+	assert.Equal(t, bundle.Namespace, spireServiceNamespace, "Namespaces should be the same.")
+}
+
+func TestInvalidNameSpaceTrustBundle(t *testing.T) {
+	reconcilerForTrustBundle := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	spireServiceNamespace := "namespace1"
+	bundle := reconcilerForTrustBundle.spireBundleDeployment("namespace2")
+	assert.NotEqual(t, bundle.Namespace, spireServiceNamespace, "Namespaces should not be the same.")
+}
+
+func TestEmptyNameSpaceTrustBundle(t *testing.T) {
+	reconcilerForTrustBundle := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	bundle := reconcilerForTrustBundle.spireBundleDeployment("")
+	assert.NotEqual(t, bundle.Namespace, "", "Namespaces should not be empty.")
 }

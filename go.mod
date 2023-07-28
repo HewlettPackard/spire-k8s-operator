@@ -6,11 +6,14 @@ require (
 	github.com/go-logr/logr v1.2.4
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.8
+	github.com/stretchr/testify v1.8.2
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.3
 	k8s.io/client-go v0.27.2
 	sigs.k8s.io/controller-runtime v0.15.0
 )
+
+require github.com/pmezard/go-difflib v1.0.0 // indirect
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
