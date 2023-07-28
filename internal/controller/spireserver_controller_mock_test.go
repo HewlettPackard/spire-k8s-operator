@@ -68,11 +68,11 @@ func TestSpireserverController(t *testing.T) {
 	if roleBinding.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, roleBinding.Namespace)
 	}
-	if clusterRoles.Namespace != spireServiceNamespace {
+	if clusterRoles.Namespace != "" {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, clusterRoles.Namespace)
 	}
-	if clusterRoleBinding.Namespace != spireServiceNamespace {
-		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, clusterRoleBinding.Namespace)
+	if clusterRoleBinding.Namespace != "" {
+		t.Errorf("Expected namespace \"\", got %s", clusterRoleBinding.Namespace)
 	}
 	if serverConfigMap.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, serverConfigMap.Namespace)
