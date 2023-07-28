@@ -1,0 +1,27 @@
+# permissions for end users to view spireagents.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: spireagent-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: spire-k8s-operator
+    app.kubernetes.io/part-of: spire-k8s-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: spireagent-viewer-role
+rules:
+- apiGroups:
+  - spire.hpe.com
+  resources:
+  - spireagents
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - spire.hpe.com
+  resources:
+  - spireagents/status
+  verbs:
+  - get
