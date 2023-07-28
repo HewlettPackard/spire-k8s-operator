@@ -27,6 +27,32 @@ var _ = Describe("SpireServer controller", func() {
 		timeout  = time.Second * 10
 	)
 	Context("When installing SPIRE server", func() {
+		It("Should create SPIRE server Service Account", func() {
+			By("By creating SPIRE server Service Account with static config")
+			ctx := context.Background()
+			testServiceAccount := &corev1.ServiceAccount{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ServiceAccount",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "spire-server",
+					Namespace: "default",
+				},
+			}
+			Expect(k8sClient.Create(ctx, testServiceAccount)).Should(Succeed())
+
+			serviceAccountLookupKey := types.NamespacedName{Name: "spire-server", Namespace: "default"}
+			createdServiceAccount := &corev1.ServiceAccount{}
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serviceAccountLookupKey, createdServiceAccount)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+
+			Expect(createdServiceAccount.ObjectMeta.Name).Should(Equal("spire-server"))
+			Expect(createdServiceAccount.ObjectMeta.Namespace).Should(Equal("default"))
+		})
 		It("Should create SPIRE server Trust Bundle", func() {
 			By("By creating SPIRE server Trust Bundle with static config")
 			ctx := context.Background()
