@@ -7,6 +7,7 @@ import (
 	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -22,9 +23,7 @@ func (m *MockClient) Create(ctx context.Context, obj client.Object, opts ...clie
 	}
 	return nil
 }
-
-func TestSpireserverController(t *testing.T) {
-	// Create the objects needed for the test
+func createReconciler() *SpireServerReconciler {
 	reconciler := &SpireServerReconciler{
 		Client: &MockClient{
 			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
@@ -34,6 +33,11 @@ func TestSpireserverController(t *testing.T) {
 		},
 		Scheme: scheme.Scheme,
 	}
+	return reconciler
+}
+
+func TestSpireserverController(t *testing.T) {
+	reconciler := createReconciler()
 
 	spireserver := &spirev1.SpireServer{}
 	spireServiceNamespace := "test-namespace"
@@ -77,4 +81,23 @@ func TestSpireserverController(t *testing.T) {
 	if spireService.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
 	}
+}
+func TestValidNameSpaceServiceAccount(t *testing.T) {
+	reconcilerForServiceAccount := createReconciler()
+	spireServiceNamespace := "sameNameSpace"
+	serviceAccount := reconcilerForServiceAccount.createServiceAccount(spireServiceNamespace)
+	assert.Equal(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should be the same.")
+}
+
+func TestInvalidNameSpaceServiceAccount(t *testing.T) {
+	reconcilerForServiceAccount := createReconciler()
+	spireServiceNamespace := "namespace1"
+	serviceAccount := reconcilerForServiceAccount.createServiceAccount("namespace2")
+	assert.NotEqual(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should not be the same.")
+}
+
+func TestEmptyNameSpaceServiceAccount(t *testing.T) {
+	reconcilerForServiceAccount := createReconciler()
+	serviceAccount := reconcilerForServiceAccount.spireBundleDeployment("")
+	assert.Equal(t, serviceAccount.Namespace, "", "Namespaces should be empty.")
 }
