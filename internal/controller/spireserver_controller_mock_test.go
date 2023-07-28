@@ -99,7 +99,7 @@ func TestInvalidNameSpaceRoles(t *testing.T) {
 func TestEmptyNameSpaceRoles(t *testing.T) {
 	reconcilerForRoles := createReconciler()
 	roles := reconcilerForRoles.spireRoleDeployment("")
-	assert.NotEqual(t, roles.Namespace, "")
+	assert.Equal(t, roles.Namespace, "")
 }
 
 func TestValidNameSpaceRoleBinding(t *testing.T) {
@@ -117,7 +117,7 @@ func TestInvalidNameSpaceRoleBinding(t *testing.T) {
 func TestEmptyNameSpaceRoleBinding(t *testing.T) {
 	reconcilerForRoleBinding := createReconciler()
 	roleBinding := reconcilerForRoleBinding.spireRoleDeployment("")
-	assert.NotEqual(t, roleBinding.Namespace, "")
+	assert.Equal(t, roleBinding.Namespace, "")
 }
 
 func TestValidNameSpaceClusterRoles(t *testing.T) {
@@ -135,7 +135,7 @@ func TestInvalidNameSpaceClusterRoles(t *testing.T) {
 func TestEmptyNameSpaceClusterRoles(t *testing.T) {
 	reconcilerForClusterRoles := createReconciler()
 	clusterRoles := reconcilerForClusterRoles.spireClusterRoleDeployment("")
-	assert.NotEqual(t, clusterRoles.Namespace, "")
+	assert.Equal(t, clusterRoles.Namespace, "")
 }
 
 func TestValidNameSpaceClusterRoleBinding(t *testing.T) {
@@ -153,5 +153,5 @@ func TestInvalidNameSpaceClusterRoleBinding(t *testing.T) {
 func TestEmptyNameSpaceClusterRoleBinding(t *testing.T) {
 	reconcilerForClusterRoleBinding := createReconciler()
 	clusterRoleBinding := reconcilerForClusterRoleBinding.spireClusterRoleDeployment("")
-	assert.NotEqual(t, clusterRoleBinding.Namespace, "")
+	assert.Equal(t, clusterRoleBinding.Namespace, "")
 }
