@@ -79,6 +79,22 @@ func TestSpireserverController(t *testing.T) {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
 	}
 }
+func TestValidNameSpaceServiceAccount(t *testing.T) {
+	spireServiceNamespace := "sameNameSpace"
+	serviceAccount := reconciler.createServiceAccount(spireServiceNamespace)
+	assert.Equal(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should be the same.")
+}
+
+func TestInvalidNameSpaceServiceAccount(t *testing.T) {
+	spireServiceNamespace := "namespace1"
+	serviceAccount := reconciler.createServiceAccount("namespace2")
+	assert.NotEqual(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should not be the same.")
+}
+
+func TestEmptyNameSpaceServiceAccount(t *testing.T) {
+	serviceAccount := reconciler.spireBundleDeployment("")
+	assert.Equal(t, serviceAccount.Namespace, "", "Namespaces should be empty.")
+}
 func TestValidNameSpaceRoles(t *testing.T) {
 	// Create the objects needed for the test
 	roles := reconciler.spireRoleDeployment("default")
