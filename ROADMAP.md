@@ -1,7 +1,6 @@
 # Roadmap
 * Support for SPIRE Agent: install and configure SPIRE Agents
 * Support for SPIRE Controller Manager: install and configure the SPIRE Controller Manager (managing registration entries would still be out of scope)
-* Automation to test and build artifacts using GitHub Actions
 
 ## Recently Completed
 * PoC goal has been completed
@@ -11,8 +10,9 @@
 * Spire Agent Operator
 
 ## Long-Term
-* Full customization of a SPIRE Server and Agent within the same trust domain and able to communicate with each other.
-* Incorperate in GreenLake Platform (GLP)
+* Full customization of a SPIRE Server and Agent within the same trust domain.
+* The ability to communicate between the SPIRE Server and Agent with the SPIRE Agent operator
+* Incorporate in GreenLake Platform (GLP)
 
 ### Initial Proof of Concept (PoC)
 
