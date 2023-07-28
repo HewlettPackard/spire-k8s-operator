@@ -7,6 +7,7 @@ import (
 	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -77,4 +78,48 @@ func TestSpireserverController(t *testing.T) {
 	if spireService.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
 	}
+}
+func TestValidNameSpaceRoles(t *testing.T) {
+	// Create the objects needed for the test
+	reconcilerForRoles := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				// Handle the create logic in the mock client
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	roles := reconcilerForRoles.spireRoleDeployment("default")
+	assert.Equal(t, roles.Namespace, "default")
+}
+
+func TestInvalidNameSpaceRoles(t *testing.T) {
+	// Create the objects needed for the test
+	reconcilerForRoles := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				// Handle the create logic in the mock client
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	roles := reconcilerForRoles.spireRoleDeployment("default1")
+	assert.NotEqual(t, roles.Namespace, "default2")
+}
+
+func TestEmptyNameSpaceRoles(t *testing.T) {
+	// Create the objects needed for the test
+	reconcilerForRoles := &SpireServerReconciler{
+		Client: &MockClient{
+			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+				// Handle the create logic in the mock client
+				return nil
+			},
+		},
+		Scheme: scheme.Scheme,
+	}
+	roles := reconcilerForRoles.spireRoleDeployment("")
+	assert.NotEqual(t, roles.Namespace, "")
 }
