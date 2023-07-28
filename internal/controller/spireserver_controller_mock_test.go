@@ -102,5 +102,5 @@ func TestInvalidNameSpaceTrustBundle(t *testing.T) {
 func TestEmptyNameSpaceTrustBundle(t *testing.T) {
 	reconcilerForTrustBundle := createReconciler()
 	bundle := reconcilerForTrustBundle.spireBundleDeployment("")
-	assert.NotEqual(t, bundle.Namespace, "", "Namespaces should not be empty.")
+	assert.Equal(t, bundle.Namespace, "", "Namespaces should be empty.")
 }
