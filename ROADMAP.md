@@ -4,15 +4,16 @@
 
 ## Recently Completed
 * PoC goal has been completed
-* Various Data Store options
+* Various Data Store Plugings
+    * 
+
 
 ## Near-Term and Medium-Term
-* Spire Agent Operator
+* Spire Agent Support
 
 ## Long-Term
 * Full customization of a SPIRE Server and Agent within the same trust domain.
 * The ability to communicate between the SPIRE Server and Agent with the SPIRE Agent operator
-* Incorporate in GreenLake Platform (GLP)
 
 ### Initial Proof of Concept (PoC)
 
