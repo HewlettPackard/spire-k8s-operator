@@ -25,21 +25,17 @@ func (m *MockClient) Create(ctx context.Context, obj client.Object, opts ...clie
 	return nil
 }
 
-func createReconciler() *SpireServerReconciler {
-	reconciler := &SpireServerReconciler{
-		Client: &MockClient{
-			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-				return nil
-			},
+var reconciler = &SpireServerReconciler{
+	Client: &MockClient{
+		CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+			return nil
 		},
-		Scheme: scheme.Scheme,
-	}
-	return reconciler
+	},
+	Scheme: scheme.Scheme,
 }
 
 func TestSpireserverController(t *testing.T) {
 	// Create the objects needed for the test
-	reconciler := createReconciler()
 
 	spireserver := &spirev1.SpireServer{}
 	spireServiceNamespace := "test-namespace"
@@ -86,21 +82,18 @@ func TestSpireserverController(t *testing.T) {
 }
 
 func TestValidTrustBundle(t *testing.T) {
-	reconcilerForTrustBundle := createReconciler()
 	spireServiceNamespace := "sameNameSpace"
-	bundle := reconcilerForTrustBundle.spireBundleDeployment(spireServiceNamespace)
+	bundle := reconciler.spireBundleDeployment(spireServiceNamespace)
 	assert.Equal(t, bundle.Namespace, spireServiceNamespace, "Namespaces should be the same.")
 }
 
 func TestInvalidNameSpaceTrustBundle(t *testing.T) {
-	reconcilerForTrustBundle := createReconciler()
 	spireServiceNamespace := "namespace1"
-	bundle := reconcilerForTrustBundle.spireBundleDeployment("namespace2")
+	bundle := reconciler.spireBundleDeployment("namespace2")
 	assert.NotEqual(t, bundle.Namespace, spireServiceNamespace, "Namespaces should not be the same.")
 }
 
 func TestEmptyNameSpaceTrustBundle(t *testing.T) {
-	reconcilerForTrustBundle := createReconciler()
-	bundle := reconcilerForTrustBundle.spireBundleDeployment("")
+	bundle := reconciler.spireBundleDeployment("")
 	assert.Equal(t, bundle.Namespace, "", "Namespaces should be empty.")
 }
