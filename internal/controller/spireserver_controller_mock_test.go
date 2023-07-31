@@ -83,6 +83,11 @@ func TestValidNameSpaceRoles(t *testing.T) {
 	// Create the objects needed for the test
 	roles := reconciler.spireRoleDeployment("default")
 	assert.Equal(t, roles.Namespace, "default")
+	assert.Equal(t, roles.Name, "spire-server-configmap-role")
+	assert.Equal(t, roles.APIVersion, "rbac.authorization.k8s.io/v1")
+	assert.Equal(t, roles.Rules[0].Verbs, []string{"patch", "get", "list"})
+	assert.Equal(t, roles.Rules[0].Resources, []string{"configmaps"})
+	assert.Equal(t, roles.Rules[0].APIGroups, []string{""})
 }
 
 func TestInvalidNameSpaceRoles(t *testing.T) {
