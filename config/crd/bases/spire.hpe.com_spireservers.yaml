@@ -44,20 +44,28 @@ spec:
               dataStore:
                 type: string
               keyStorage:
-                description: ServerDataPath string `json:"serverDataPath"` unsure
-                  how this would be validated so omitted for now
+                enum:
+                - disk
+                - memory
                 type: string
               nodeAttestors:
+                enum:
+                - k8s_psat
+                - k8s_sat
+                - join_token
                 items:
                   type: string
+                minItems: 1
                 type: array
               port:
+                maximum: 65535
+                minimum: 0
                 type: integer
               replicas:
+                minimum: 1
                 type: integer
               trustDomain:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
+                pattern: '[a-z0-9._-]{1,255}'
                 type: string
             required:
             - connectionString
@@ -72,9 +80,6 @@ spec:
             description: SpireServerStatus defines the observed state of SpireServer
             properties:
               health:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
                 type: string
             required:
             - health

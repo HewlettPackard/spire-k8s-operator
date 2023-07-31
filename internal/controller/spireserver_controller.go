@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
-	"golang.org/x/exp/slices"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -52,7 +51,6 @@ var (
 	supportedNodeAttestors = []string{"k8s_psat", "k8s_sat", "join_token"}
 	serverNodeAttestors    []string
 	serverPort             int
-	supportedDataStores    = []string{"sqlite3", "postgres", "mysql"}
 )
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
@@ -93,6 +91,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		err = r.Delete(ctx, spireserver)
 		return ctrl.Result{}, err
 	}
+	serverPort = spireserver.Spec.Port
 
 	serviceAccount := r.createServiceAccount(req.Namespace)
 
@@ -150,12 +149,6 @@ func validateYaml(s *spirev1.SpireServer) error {
 		return errors.New("trust domain is invalid")
 	}
 
-	if !(s.Spec.Port >= 0 && s.Spec.Port <= 65535) {
-		return errors.New("invalid port number") //TODO: should we restrict to other ports? This is basic for all ports.
-	} else {
-		serverPort = s.Spec.Port
-	}
-
 	var match bool
 	for _, currAttestor := range s.Spec.NodeAttestors {
 		match = false
@@ -173,24 +166,8 @@ func validateYaml(s *spirev1.SpireServer) error {
 		serverNodeAttestors = s.Spec.NodeAttestors
 	}
 
-	if !((strings.Compare("disk", strings.ToLower(s.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(s.Spec.KeyStorage)) == 0)) {
-		return errors.New("generated key storage is only supported on disk or in memory")
-	}
-
-	if s.Spec.Replicas <= 0 {
-		return errors.New("at least one replica needs to exist")
-	}
-
-	if !(slices.Contains(supportedDataStores, strings.ToLower(s.Spec.DataStore))) {
-		return errors.New("invalid datastore: supported datastores are sqlite3, postgres, and mysql")
-	}
-
 	if (strings.Compare("sqlite3", strings.ToLower(s.Spec.DataStore)) == 0) && (s.Spec.Replicas > 1) {
 		return errors.New("cannot have more than 1 replica with sqlite3 database")
-	}
-
-	if len(s.Spec.ConnectionString) == 0 {
-		return errors.New("connection string cannot be empty")
 	}
 
 	return nil

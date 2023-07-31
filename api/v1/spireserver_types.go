@@ -25,27 +25,34 @@ import (
 
 // SpireServerSpec defines the desired state of SpireServer
 type SpireServerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// +kubebuilder:validation:Required
+
+	// +kubebuilder:validation:Pattern="[a-z0-9._-]{1,255}"
 	TrustDomain string `json:"trustDomain"`
 
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=65535
 	Port int `json:"port"`
 
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:UniqueItems=true
 	NodeAttestors []string `json:"nodeAttestors"`
 
+	// +kubebuilder:validation:Enum=disk;memory
 	KeyStorage string `json:"keyStorage"`
 
+	// +kubebuilder:validation:Minimum=1
 	Replicas int `json:"replicas"`
 
+	// +kubebuilder:validation:Enum=sqlite3;postgres;mysql
 	DataStore string `json:"dataStore"`
 
+	// +kubebuilder:validation:MinLength=1
 	ConnectionString string `json:"connectionString"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer
 type SpireServerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 	Health string `json:"health"`
 }
 
