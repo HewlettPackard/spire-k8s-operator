@@ -38,3 +38,6 @@ The definition can be found [here](../api/v1/spireserver_types.go).
         keyStorage: disk
         replicas: 1
     ```
+
+## Note
+Under the High Availability (HA) model, if your cluster has more than one replica of a SPIRE Server, it cannot use `sqlite3` as its datastore. The operator will reject and delete any SPIRE server instances with this configuration. 
