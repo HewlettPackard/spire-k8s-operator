@@ -4,18 +4,22 @@
 
 ## Recently Completed
 * PoC goal has been completed
-* Various Data Store Plugings
-    * 
+* Support Data Store Pluging SQLite (sqlite3)
+    * Save Database in File
+    * Save Database in Memory
 
 
 ## Near-Term and Medium-Term
 * Spire Agent Support
+* Support Spire Server Data Store Pluging...
+    * MySQL
+    * Postgres
 
 ## Long-Term
 * Full customization of a SPIRE Server and Agent within the same trust domain.
-* The ability to communicate between the SPIRE Server and Agent with the SPIRE Agent operator
+* Establish communication between a SPIRE Server and Agent by viewing SVIDs 
 
 ### Initial Proof of Concept (PoC)
 
 - **Status**: Completed
-- **Goal**: Create a customized Spire Server using a Kubernetes Operator
+- **Goal**: The goal of this PoC aims to develop and test a Kubernetes operator and CRDs for deploying the SPIRE server in Kubernetes environments. The operator will include automation for common tasks such as installing, configuring, as well as making sure the SPIRE Server is up and running by running health checks.
