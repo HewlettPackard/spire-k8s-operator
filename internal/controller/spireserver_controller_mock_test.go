@@ -147,16 +147,24 @@ func TestEmptyNameSpaceClusterRoles(t *testing.T) {
 }
 
 func TestValidNameSpaceClusterRoleBinding(t *testing.T) {
-	clusterRoleBinding := reconciler.spireClusterRoleDeployment("default")
-	assert.Equal(t, clusterRoleBinding.Namespace, "")
+	clusterRoleBinding := reconciler.spireClusterRoleBindingDeployment("default")
+	assert.Equal(t, clusterRoleBinding.Kind, "ClusterRoleBinding")
+	assert.Equal(t, clusterRoleBinding.APIVersion, "rbac.authorization.k8s.io/v1")
+	assert.Equal(t, clusterRoleBinding.Name, "spire-server-trust-role-binding")
+	assert.Equal(t, clusterRoleBinding.RoleRef.Kind, "ClusterRole")
+	assert.Equal(t, clusterRoleBinding.RoleRef.Name, "spire-server-trust-role")
+	assert.Equal(t, clusterRoleBinding.RoleRef.APIGroup, "rbac.authorization.k8s.io")
+	assert.Equal(t, clusterRoleBinding.Subjects[0].Kind, "ServiceAccount")
+	assert.Equal(t, clusterRoleBinding.Subjects[0].Name, "spire-server")
+	assert.Equal(t, clusterRoleBinding.Subjects[0].Namespace, "default")
 }
 
 func TestInvalidNameSpaceClusterRoleBinding(t *testing.T) {
-	clusterRoleBinding := reconciler.spireClusterRoleDeployment("default1")
+	clusterRoleBinding := reconciler.spireClusterRoleBindingDeployment("default1")
 	assert.Equal(t, clusterRoleBinding.Namespace, "")
 }
 
 func TestEmptyNameSpaceClusterRoleBinding(t *testing.T) {
-	clusterRoleBinding := reconciler.spireClusterRoleDeployment("")
+	clusterRoleBinding := reconciler.spireClusterRoleBindingDeployment("")
 	assert.Equal(t, clusterRoleBinding.Namespace, "")
 }
