@@ -23,21 +23,18 @@ func (m *MockClient) Create(ctx context.Context, obj client.Object, opts ...clie
 	}
 	return nil
 }
-func createReconciler() *SpireServerReconciler {
-	reconciler := &SpireServerReconciler{
-		Client: &MockClient{
-			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-				// Handle the create logic in the mock client
-				return nil
-			},
+
+var reconciler = &SpireServerReconciler{
+	Client: &MockClient{
+		CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+			// Handle the create logic in the mock client
+			return nil
 		},
-		Scheme: scheme.Scheme,
-	}
-	return reconciler
+	},
+	Scheme: scheme.Scheme,
 }
 
 func TestSpireserverController(t *testing.T) {
-	reconciler := createReconciler()
 
 	spireserver := &spirev1.SpireServer{}
 	spireServiceNamespace := "test-namespace"
@@ -83,21 +80,18 @@ func TestSpireserverController(t *testing.T) {
 	}
 }
 func TestValidNameSpaceServiceAccount(t *testing.T) {
-	reconcilerForServiceAccount := createReconciler()
 	spireServiceNamespace := "sameNameSpace"
-	serviceAccount := reconcilerForServiceAccount.createServiceAccount(spireServiceNamespace)
+	serviceAccount := reconciler.createServiceAccount(spireServiceNamespace)
 	assert.Equal(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should be the same.")
 }
 
 func TestInvalidNameSpaceServiceAccount(t *testing.T) {
-	reconcilerForServiceAccount := createReconciler()
 	spireServiceNamespace := "namespace1"
-	serviceAccount := reconcilerForServiceAccount.createServiceAccount("namespace2")
+	serviceAccount := reconciler.createServiceAccount("namespace2")
 	assert.NotEqual(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should not be the same.")
 }
 
 func TestEmptyNameSpaceServiceAccount(t *testing.T) {
-	reconcilerForServiceAccount := createReconciler()
-	serviceAccount := reconcilerForServiceAccount.spireBundleDeployment("")
+	serviceAccount := reconciler.spireBundleDeployment("")
 	assert.Equal(t, serviceAccount.Namespace, "", "Namespaces should be empty.")
 }
