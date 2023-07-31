@@ -35,7 +35,6 @@ var reconciler = &SpireServerReconciler{
 }
 
 func TestSpireserverController(t *testing.T) {
-	// Create the objects needed for the test
 
 	spireserver := &spirev1.SpireServer{}
 	spireServiceNamespace := "test-namespace"
@@ -94,7 +93,7 @@ func TestInvalidNameSpaceServiceAccount(t *testing.T) {
 }
 
 func TestEmptyNameSpaceServiceAccount(t *testing.T) {
-	serviceAccount := reconciler.spireBundleDeployment("")
+	serviceAccount := reconciler.createServiceAccount("")
 	assert.Equal(t, serviceAccount.Namespace, "", "Namespaces should be empty.")
 }
 
