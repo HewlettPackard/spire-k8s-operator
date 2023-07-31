@@ -104,12 +104,12 @@ func TestValidNameSpaceConfigMap(t *testing.T) {
 	assert.Equal(t, configMap.Namespace, "default", "Namespaces should be the same.")
 }
 
-func TestInvalidNameSpaceServiceAccount(t *testing.T) {
+func TestInvalidNameSpaceConfigMap(t *testing.T) {
 	configMap := reconciler.spireConfigMapDeployment(s, "namespace1")
 	assert.NotEqual(t, configMap.Namespace, "namespace2", "Namespaces should not be the same.")
 }
 
-func TestEmptyNameSpaceServiceAccount(t *testing.T) {
+func TestEmptyNameSpaceConfigMap(t *testing.T) {
 	configMap := reconciler.spireConfigMapDeployment(s, "")
 	assert.Equal(t, configMap.Namespace, "", "Namespace should be empty.")
 }
