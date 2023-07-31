@@ -40,22 +40,29 @@ spec:
             description: SpireServerSpec defines the desired state of SpireServer
             properties:
               connectionString:
+                description: Connection string for the datastore
                 type: string
               dataStore:
+                description: Indicates how server data should be stored (sqlite3,
+                  mysql, or postgres)
                 type: string
               keyStorage:
+                description: Indicates whether the generated keys are stored on disk
+                  or in memory
                 type: string
               nodeAttestors:
+                description: The node attestor plugins the SPIRE server uses
                 items:
                   type: string
                 type: array
               port:
+                description: The port on which the SPIRE server listens to agents
                 type: integer
               replicas:
+                description: Number of replicas for SPIRE server
                 type: integer
               trustDomain:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
+                description: The trust domain associated with the SPIRE server
                 type: string
             required:
             - connectionString
@@ -70,9 +77,8 @@ spec:
             description: SpireServerStatus defines the observed state of SpireServer
             properties:
               health:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
+                description: Indicates whether the SPIRE server is in an error state
+                  (ERROR), initializing (INIT), live (LIVE), or ready (READY)
                 type: string
             required:
             - health
