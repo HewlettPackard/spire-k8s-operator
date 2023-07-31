@@ -25,13 +25,13 @@ import (
 
 // SpireServerSpec defines the desired state of SpireServer
 type SpireServerSpec struct {
-	// The trust domain associated with the SPIRE server
+	// Trust domain associated with the SPIRE server
 	TrustDomain string `json:"trustDomain"`
 
-	// The port on which the SPIRE server listens to agents
+	// Port on which the SPIRE server listens to agents
 	Port int `json:"port"`
 
-	// The node attestor plugins the SPIRE server uses
+	// Node attestor plugins the SPIRE server uses
 	NodeAttestors []string `json:"nodeAttestors"`
 
 	// Indicates whether the generated keys are stored on disk or in memory

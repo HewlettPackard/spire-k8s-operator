@@ -51,18 +51,18 @@ spec:
                   or in memory
                 type: string
               nodeAttestors:
-                description: The node attestor plugins the SPIRE server uses
+                description: Node attestor plugins the SPIRE server uses
                 items:
                   type: string
                 type: array
               port:
-                description: The port on which the SPIRE server listens to agents
+                description: Port on which the SPIRE server listens to agents
                 type: integer
               replicas:
                 description: Number of replicas for SPIRE server
                 type: integer
               trustDomain:
-                description: The trust domain associated with the SPIRE server
+                description: Trust domain associated with the SPIRE server
                 type: string
             required:
             - connectionString

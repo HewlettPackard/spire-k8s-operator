@@ -36,14 +36,20 @@ spec:
             description: SpireAgentSpec defines the desired state of SpireAgent
             properties:
               keyStorage:
+                description: Indicates whether the generated keys are stored on disk
+                  or in memory
                 type: string
               nodeAttestor:
+                description: Node attestor plugin the SPIRE agent uses
                 type: string
               serverPort:
+                description: Port on which the SPIRE server listens to agents
                 type: integer
               trustDomain:
+                description: Trust domain that the SPIRE agent issues identities to
                 type: string
               workloadAttestors:
+                description: Workload attestor plugins the SPIRE agent uses
                 items:
                   type: string
                 type: array

@@ -9,11 +9,11 @@ The definition can be found [here](../api/v1/spireagent_types.go).
 ## SpireAgentSpec
 | Field | Required | Description |
 | ----- | -------- | ----------- |
-| `trustDomain`         | REQUIRED | The trust domain that the SPIRE agent issues identities to |
-| `nodeAttestor`       | REQUIRED | The node attestor plugin the SPIRE agent uses |
-| `workloadAttestors` | REQUIRED | The workload attestor plugins the SPIRE agent uses |
+| `trustDomain`         | REQUIRED | Trust domain that the SPIRE agent issues identities to |
+| `nodeAttestor`       | REQUIRED | Node attestor plugin the SPIRE agent uses |
+| `workloadAttestors` | REQUIRED | Workload attestor plugins the SPIRE agent uses |
 | `keyStorage` | REQUIRED | Indicates whether the generated keys are stored on disk or in memory |
-| `serverPort` | REQUIRED | The port on which the SPIRE server listens to agents |
+| `serverPort` | REQUIRED | Port on which the SPIRE server listens to agents |
 
 ## Examples
 1. SPIRE Agent from [SPIRE's Quickstart for Kubernetes](https://spiffe.io/docs/latest/try/getting-started-k8s/)
