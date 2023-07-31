@@ -17,7 +17,7 @@ var (
 		Kind:       "SpireServer",
 	}
 	serverObjectMeta = metav1.ObjectMeta{
-		Name:      "invalid-spire-server",
+		Name:      "valid-spire-server",
 		Namespace: "default",
 	}
 
@@ -25,7 +25,7 @@ var (
 		TypeMeta:   serverTypeMeta,
 		ObjectMeta: serverObjectMeta,
 		Spec: spirev1.SpireServerSpec{
-			TrustDomain:   "",
+			TrustDomain:   "example.org",
 			Port:          8081,
 			NodeAttestors: []string{"k8s_sat"},
 			KeyStorage:    "disk",
@@ -122,4 +122,39 @@ func TestEmptyNameSpaceServiceAccount(t *testing.T) {
 	reconcilerForConfigMap := createReconciler()
 	configMap := reconcilerForConfigMap.spireConfigMapDeployment(s, "")
 	assert.Equal(t, configMap.Namespace, "", "Namespace should be empty.")
+}
+
+func TestValidConfigMapSingleAttestor(t *testing.T) {
+	reconcilerForConfigMap := createReconciler()
+	configMap := reconcilerForConfigMap.spireConfigMapDeployment(s, "default")
+
+	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"k8s_sat\"")
+
+	assert.Contains(t, configMap.Data["server.conf"], "trust_domain = \"example.org\"")
+	assert.Contains(t, configMap.Data["server.conf"], "bind_port = \"8081\"")
+	assert.Contains(t, configMap.Data["server.conf"], "KeyManager \"disk\"")
+}
+
+func TestValidConfigMapMultipleAttestors(t *testing.T) {
+	s2 := &spirev1.SpireServer{
+		TypeMeta:   serverTypeMeta,
+		ObjectMeta: serverObjectMeta,
+		Spec: spirev1.SpireServerSpec{
+			TrustDomain:   "example.org",
+			Port:          8081,
+			NodeAttestors: []string{"k8s_sat", "join_token", "k8s_psat"},
+			KeyStorage:    "disk",
+			Replicas:      1,
+		}}
+
+	reconcilerForConfigMap := createReconciler()
+	configMap := reconcilerForConfigMap.spireConfigMapDeployment(s2, "default")
+
+	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"k8s_sat\"")
+	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"join_token\"")
+	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"k8s_psat\"")
+
+	assert.Contains(t, configMap.Data["server.conf"], "trust_domain = \"example.org\"")
+	assert.Contains(t, configMap.Data["server.conf"], "bind_port = \"8081\"")
+	assert.Contains(t, configMap.Data["server.conf"], "KeyManager \"disk\"")
 }
