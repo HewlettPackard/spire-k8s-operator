@@ -4,11 +4,34 @@ import (
 	"context"
 	"testing"
 
-	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
-
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+var (
+	serverTypeMeta = metav1.TypeMeta{
+		APIVersion: "spire.hpe.com/v1",
+		Kind:       "SpireServer",
+	}
+	serverObjectMeta = metav1.ObjectMeta{
+		Name:      "invalid-spire-server",
+		Namespace: "default",
+	}
+
+	s = &spirev1.SpireServer{
+		TypeMeta:   serverTypeMeta,
+		ObjectMeta: serverObjectMeta,
+		Spec: spirev1.SpireServerSpec{
+			TrustDomain:   "",
+			Port:          8081,
+			NodeAttestors: []string{"k8s_sat"},
+			KeyStorage:    "disk",
+			Replicas:      1,
+		},
+	}
 )
 
 type MockClient struct {
@@ -23,8 +46,7 @@ func (m *MockClient) Create(ctx context.Context, obj client.Object, opts ...clie
 	return nil
 }
 
-func TestSpireserverController(t *testing.T) {
-	// Create the objects needed for the test
+func createReconciler() *SpireServerReconciler {
 	reconciler := &SpireServerReconciler{
 		Client: &MockClient{
 			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
@@ -34,6 +56,11 @@ func TestSpireserverController(t *testing.T) {
 		},
 		Scheme: scheme.Scheme,
 	}
+	return reconciler
+}
+
+func TestSpireserverController(t *testing.T) {
+	reconciler := createReconciler()
 
 	spireserver := &spirev1.SpireServer{}
 	spireServiceNamespace := "test-namespace"
@@ -77,4 +104,22 @@ func TestSpireserverController(t *testing.T) {
 	if spireService.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
 	}
+}
+
+func TestValidNameSpaceConfigMap(t *testing.T) {
+	reconcilerForConfigMap := createReconciler()
+	configMap := reconcilerForConfigMap.spireConfigMapDeployment(s, "default")
+	assert.Equal(t, configMap.Namespace, "default", "Namespaces should be the same.")
+}
+
+func TestInvalidNameSpaceServiceAccount(t *testing.T) {
+	reconcilerForConfigMap := createReconciler()
+	configMap := reconcilerForConfigMap.spireConfigMapDeployment(s, "namespace1")
+	assert.NotEqual(t, configMap.Namespace, "namespace2", "Namespaces should not be the same.")
+}
+
+func TestEmptyNameSpaceServiceAccount(t *testing.T) {
+	reconcilerForConfigMap := createReconciler()
+	configMap := reconcilerForConfigMap.spireConfigMapDeployment(s, "")
+	assert.Equal(t, configMap.Namespace, "", "Namespace should be empty.")
 }
