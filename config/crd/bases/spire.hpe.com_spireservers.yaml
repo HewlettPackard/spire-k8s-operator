@@ -44,8 +44,6 @@ spec:
               dataStore:
                 type: string
               keyStorage:
-                description: ServerDataPath string `json:"serverDataPath"` unsure
-                  how this would be validated so omitted for now
                 type: string
               nodeAttestors:
                 items:

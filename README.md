@@ -1,8 +1,8 @@
 # Kubernetes Operator for SPIRE
 
-The [Kubernetes Operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) for SPIRE configures, deploys, and helps ensure that a SPIRE server is up and running in a Kubernetes cluster based on a basic user-defined specification. 
+The [Kubernetes Operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) for SPIRE configures, deploys, and helps ensure that a SPIRE server and agents are up and running in a Kubernetes cluster based on basic user-defined specifications. 
 
-This is a proof-of-concept project by the interns under the Identity and Access Management of Greenlake Cloud Platform (summer 2023). 
+This is a proof-of-concept project by the interns under the Identity and Access Management of GreenLake Platform (summer 2023). 
 
 ## How it Works
 
