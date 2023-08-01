@@ -89,7 +89,7 @@ func (in *SpireAgentSpec) DeepCopyInto(out *SpireAgentSpec) {
 	*out = *in
 	if in.WorkloadAttestors != nil {
 		in, out := &in.WorkloadAttestors, &out.WorkloadAttestors
-		*out = make([]string, len(*in))
+		*out = make([]WorkloadAttestor, len(*in))
 		copy(*out, *in)
 	}
 }

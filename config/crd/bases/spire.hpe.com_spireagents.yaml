@@ -36,6 +36,9 @@ spec:
             description: SpireAgentSpec defines the desired state of SpireAgent
             properties:
               keyStorage:
+                enum:
+                - disk
+                - memory
                 type: string
               nodeAttestor:
                 enum:
@@ -44,12 +47,21 @@ spec:
                 - k8s_psat
                 type: string
               serverPort:
+                maximum: 65535
+                minimum: 0
                 type: integer
               trustDomain:
                 type: string
               workloadAttestors:
                 items:
+                  enum:
+                  - k8s
+                  - unix
+                  - docker
+                  - systemd
+                  - windows
                   type: string
+                minItems: 1
                 type: array
             required:
             - keyStorage

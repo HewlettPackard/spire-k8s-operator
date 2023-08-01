@@ -27,7 +27,6 @@ import (
 type SpireServerSpec struct {
 	// +kubebuilder:validation:Required
 
-	// +kubebuilder:validation:Pattern="[a-z0-9._-]{1,255}"
 	TrustDomain string `json:"trustDomain"`
 
 	// +kubebuilder:validation:Minimum=0

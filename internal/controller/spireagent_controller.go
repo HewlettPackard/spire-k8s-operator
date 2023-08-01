@@ -44,10 +44,6 @@ type SpireAgentReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-var (
-	supportedWorkloadAttestors = []string{"k8s", "unix", "docker", "systemd", "windows"}
-)
-
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents/finalizers,verbs=update
@@ -177,16 +173,6 @@ func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx conte
 
 	if !(slices.Contains(serverNodeAttestors, a.Spec.NodeAttestor)) {
 		return errors.New("the inputted node attestor is not supported by the server")
-	}
-
-	for _, currWLAttestor := range a.Spec.WorkloadAttestors {
-		if !(slices.Contains(supportedWorkloadAttestors, currWLAttestor)) {
-			return errors.New("incorrect workload attestors list inputted: at least one of the specified workload attestors is not supported")
-		}
-	}
-
-	if !((strings.Compare("disk", strings.ToLower(a.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(a.Spec.KeyStorage)) == 0)) {
-		return errors.New("generated key storage is only supported on disk or in memory")
 	}
 
 	return nil
@@ -337,15 +323,15 @@ func (r *SpireAgentReconciler) agentConfigMapDeployment(a *spirev1.SpireAgent, n
 
 	workloadAttestorsConfig := ""
 	for _, wLAttestor := range a.Spec.WorkloadAttestors {
-		if strings.Compare(wLAttestor, "k8s") == 0 {
+		if strings.Compare(string(wLAttestor), "k8s") == 0 {
 			workloadAttestorsConfig += k8sWLAttestor()
-		} else if strings.Compare(wLAttestor, "unix") == 0 {
+		} else if strings.Compare(string(wLAttestor), "unix") == 0 {
 			workloadAttestorsConfig += unixWLAttestor()
-		} else if strings.Compare(wLAttestor, "docker") == 0 {
+		} else if strings.Compare(string(wLAttestor), "docker") == 0 {
 			workloadAttestorsConfig += dockerWLAttestor()
-		} else if strings.Compare(wLAttestor, "systemd") == 0 {
+		} else if strings.Compare(string(wLAttestor), "systemd") == 0 {
 			workloadAttestorsConfig += systemdWLAttestor()
-		} else if strings.Compare(wLAttestor, "windows") == 0 {
+		} else if strings.Compare(string(wLAttestor), "windows") == 0 {
 			workloadAttestorsConfig += windowsWLAttestor()
 		}
 	}
