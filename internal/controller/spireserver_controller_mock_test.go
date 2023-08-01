@@ -9,7 +9,6 @@ import (
 	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
-	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
