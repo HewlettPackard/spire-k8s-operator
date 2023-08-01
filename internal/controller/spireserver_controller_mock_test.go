@@ -7,6 +7,7 @@ import (
 	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -23,17 +24,17 @@ func (m *MockClient) Create(ctx context.Context, obj client.Object, opts ...clie
 	return nil
 }
 
-func TestSpireserverController(t *testing.T) {
-	// Create the objects needed for the test
-	reconciler := &SpireServerReconciler{
-		Client: &MockClient{
-			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-				// Handle the create logic in the mock client
-				return nil
-			},
+var reconciler = &SpireServerReconciler{
+	Client: &MockClient{
+		CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+			// Handle the create logic in the mock client
+			return nil
 		},
-		Scheme: scheme.Scheme,
-	}
+	},
+	Scheme: scheme.Scheme,
+}
+
+func TestSpireserverController(t *testing.T) {
 
 	spireserver := &spirev1.SpireServer{}
 	spireServiceNamespace := "test-namespace"
@@ -77,4 +78,20 @@ func TestSpireserverController(t *testing.T) {
 	if spireService.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
 	}
+}
+func TestValidNameSpaceServiceAccount(t *testing.T) {
+	spireServiceNamespace := "sameNameSpace"
+	serviceAccount := reconciler.createServiceAccount(spireServiceNamespace)
+	assert.Equal(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should be the same.")
+}
+
+func TestInvalidNameSpaceServiceAccount(t *testing.T) {
+	spireServiceNamespace := "namespace1"
+	serviceAccount := reconciler.createServiceAccount("namespace2")
+	assert.NotEqual(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should not be the same.")
+}
+
+func TestEmptyNameSpaceServiceAccount(t *testing.T) {
+	serviceAccount := reconciler.spireBundleDeployment("")
+	assert.Equal(t, serviceAccount.Namespace, "", "Namespaces should be empty.")
 }
