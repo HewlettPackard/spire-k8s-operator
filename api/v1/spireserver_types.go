@@ -40,6 +40,18 @@ type SpireServerSpec struct {
 	DataStore string `json:"dataStore"`
 
 	ConnectionString string `json:"connectionString"`
+
+	// The path to the trusted CA bundle on disk for the x509pop node attestor
+	// +kubebuilder:validation:Optional
+	CABundlePath string `json:"caBundlePath"`
+
+	// A list of trusted CAs in ssh authorized_keys format for the sshpop node attestor
+	// +kubebuilder:validation:Optional
+	CertAuthorities []string `json:"certAuthorities"`
+
+	// A file that contains a list of trusted CAs in ssh authorized_keys format for the sshpop node attestor
+	// +kubebuilder:validation:Optional
+	CertAuthoritiesPath string `json:"certAuthoritiesPath"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer

@@ -35,9 +35,25 @@ spec:
           spec:
             description: SpireAgentSpec defines the desired state of SpireAgent
             properties:
+              certificatePath:
+                description: The path to the certificate bundle on disk for the x509pop
+                  node attestor
+                type: string
+              hostCertPath:
+                description: The path to the certificate on disk in openssh format
+                  for the sshpop node attestor
+                type: string
+              hostKeyPath:
+                description: The path to the private key on disk in openssh format
+                  for the sshpop node attestor
+                type: string
               keyStorage:
                 type: string
               nodeAttestor:
+                type: string
+              privateKeyPath:
+                description: The path to the private key on disk for the x509pop node
+                  attestor
                 type: string
               serverPort:
                 type: integer

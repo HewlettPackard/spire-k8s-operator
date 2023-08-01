@@ -37,6 +37,22 @@ type SpireAgentSpec struct {
 	KeyStorage string `json:"keyStorage"`
 
 	ServerPort int `json:"serverPort"`
+
+	// The path to the private key on disk for the x509pop node attestor
+	// +kubebuilder:validation:Optional
+	PrivateKeyPath string `json:"privateKeyPath"`
+
+	// The path to the certificate bundle on disk for the x509pop node attestor
+	// +kubebuilder:validation:Optional
+	CertificatePath string `json:"certificatePath"`
+
+	// The path to the private key on disk in openssh format for the sshpop node attestor
+	// +kubebuilder:validation:Optional
+	HostKeyPath string `json:"hostKeyPath"`
+
+	// The path to the certificate on disk in openssh format for the sshpop node attestor
+	// +kubebuilder:validation:Optional
+	HostCertPath string `json:"hostCertPath"`
 }
 
 // SpireAgentStatus defines the observed state of SpireAgent
