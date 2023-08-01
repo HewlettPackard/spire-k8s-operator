@@ -42,6 +42,7 @@ type SpireServerSpec struct {
 	ConnectionString string `json:"connectionString"`
 
 	// The path to the trusted CA bundle on disk for the x509pop node attestor
+	// +kubebuilder:validation:Pattern=`^(.+)/([^/]+).(pem)$`
 	// +kubebuilder:validation:Optional
 	CABundlePath string `json:"caBundlePath"`
 

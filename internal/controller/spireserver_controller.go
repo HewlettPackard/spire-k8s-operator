@@ -460,6 +460,8 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 			nodeAttestorsConfig += k8sSatNodeAttestor(namespace)
 		} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
 			nodeAttestorsConfig += k8sPsatNodeAttestor(namespace)
+		} else if strings.Compare(nodeAttestor, "x509pop") == 0 {
+			nodeAttestorsConfig += x509popNodeAttestor(s.Spec.CABundlePath)
 		}
 	}
 
@@ -521,6 +523,16 @@ func joinTokenNodeAttestor() string {
 	NodeAttestor "join_token" {
 		plugin_data {
 
+		}
+	}`
+}
+
+func x509popNodeAttestor(bundlePath string) string {
+	return `
+
+	NodeAttestor "x509pop" {
+		plugin_data {
+			ca_bundle_path = "` + bundlePath + `"
 		}
 	}`
 }
