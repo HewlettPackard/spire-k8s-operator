@@ -1,6 +1,6 @@
 # Getting Started with SPIRE Operator for Kubernetes
 
-This guide will walk you through the process of setting up the SPIRE operator for Kubernetes and deploying a user-configured SPIRE Server and agent using the operator. It will then guide you through configuring a registration entry for a workload and fetching an x509-SVID over the SPIFFE Workload API, as adapted from the [SPIRE Quickstart for Kubernetes](https://spiffe.io/docs/latest/try/getting-started-k8s/). 
+This guide will walk you through the process of setting up the SPIRE operator for Kubernetes and deploying a user-configured SPIRE server and agent using the operator. It will then guide you through configuring a registration entry for a workload and fetching an x509-SVID over the SPIFFE Workload API, as adapted from the [SPIRE Quickstart for Kubernetes](https://spiffe.io/docs/latest/try/getting-started-k8s/). 
 
 ## Prerequisites
 Before you begin, you should have a Kubernetes cluster running and access to the `kubectl` command line tool to control the cluster. 
