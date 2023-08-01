@@ -29,17 +29,7 @@ var (
 		Namespace: "default",
 	}
 
-	s = &spirev1.SpireServer{
-		TypeMeta:   serverTypeMeta,
-		ObjectMeta: serverObjectMeta,
-		Spec: spirev1.SpireServerSpec{
-			TrustDomain:   "example.org",
-			Port:          8081,
-			NodeAttestors: []string{"k8s_sat"},
-			KeyStorage:    "disk",
-			Replicas:      1,
-		},
-	}
+	mockSpireServer = createSpireServer("example.org", 8081, []string{"k8s_sat"}, "disk", 1)
 )
 
 type MockClient struct {
@@ -52,6 +42,20 @@ func (m *MockClient) Create(ctx context.Context, obj client.Object, opts ...clie
 		return m.CreateFn(ctx, obj, opts...)
 	}
 	return nil
+}
+
+func createSpireServer(trustDomain string, port int, nodeAttestors []string, keyStorage string, replicas int) *spirev1.SpireServer {
+	return &spirev1.SpireServer{
+		TypeMeta:   serverTypeMeta,
+		ObjectMeta: serverObjectMeta,
+		Spec: spirev1.SpireServerSpec{
+			TrustDomain:   trustDomain,
+			Port:          port,
+			NodeAttestors: nodeAttestors,
+			KeyStorage:    keyStorage,
+			Replicas:      replicas,
+		},
+	}
 }
 
 func TestSpireserverController(t *testing.T) {
@@ -100,22 +104,22 @@ func TestSpireserverController(t *testing.T) {
 }
 
 func TestValidNameSpaceConfigMap(t *testing.T) {
-	configMap := reconciler.spireConfigMapDeployment(s, "default")
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "default")
 	assert.Equal(t, configMap.Namespace, "default", "Namespaces should be the same.")
 }
 
 func TestInvalidNameSpaceConfigMap(t *testing.T) {
-	configMap := reconciler.spireConfigMapDeployment(s, "namespace1")
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "namespace1")
 	assert.NotEqual(t, configMap.Namespace, "namespace2", "Namespaces should not be the same.")
 }
 
 func TestEmptyNameSpaceConfigMap(t *testing.T) {
-	configMap := reconciler.spireConfigMapDeployment(s, "")
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "")
 	assert.Equal(t, configMap.Namespace, "", "Namespace should be empty.")
 }
 
 func TestValidConfigMapSingleAttestor(t *testing.T) {
-	configMap := reconciler.spireConfigMapDeployment(s, "default")
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "default")
 
 	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"k8s_sat\"")
 
@@ -125,18 +129,9 @@ func TestValidConfigMapSingleAttestor(t *testing.T) {
 }
 
 func TestValidConfigMapMultipleAttestors(t *testing.T) {
-	s2 := &spirev1.SpireServer{
-		TypeMeta:   serverTypeMeta,
-		ObjectMeta: serverObjectMeta,
-		Spec: spirev1.SpireServerSpec{
-			TrustDomain:   "example.org",
-			Port:          8081,
-			NodeAttestors: []string{"k8s_sat", "join_token", "k8s_psat"},
-			KeyStorage:    "disk",
-			Replicas:      1,
-		}}
+	mockSpireServer2 := createSpireServer("example.org", 8081, []string{"k8s_sat", "join_token", "k8s_psat"}, "disk", 1)
 
-	configMap := reconciler.spireConfigMapDeployment(s2, "default")
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer2, "default")
 
 	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"k8s_sat\"")
 	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"join_token\"")
