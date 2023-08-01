@@ -40,8 +40,13 @@ spec:
             description: SpireServerSpec defines the desired state of SpireServer
             properties:
               connectionString:
+                minLength: 1
                 type: string
               dataStore:
+                enum:
+                - sqlite3
+                - postgres
+                - mysql
                 type: string
               keyStorage:
                 enum:
@@ -49,11 +54,11 @@ spec:
                 - memory
                 type: string
               nodeAttestors:
-                enum:
-                - k8s_psat
-                - k8s_sat
-                - join_token
                 items:
+                  enum:
+                  - k8s_sat
+                  - join_token
+                  - k8s_psat
                   type: string
                 minItems: 1
                 type: array

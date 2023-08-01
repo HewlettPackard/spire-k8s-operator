@@ -48,9 +48,8 @@ type SpireServerReconciler struct {
 }
 
 var (
-	supportedNodeAttestors = []string{"k8s_psat", "k8s_sat", "join_token"}
-	serverNodeAttestors    []string
-	serverPort             int
+	serverNodeAttestors []spirev1.NodeAttestor
+	serverPort          int
 )
 
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireservers,verbs=get;list;watch;create;update;patch;delete
@@ -149,26 +148,11 @@ func validateYaml(s *spirev1.SpireServer) error {
 		return errors.New("trust domain is invalid")
 	}
 
-	var match bool
-	for _, currAttestor := range s.Spec.NodeAttestors {
-		match = false
-		for _, nodeAttestor := range supportedNodeAttestors {
-			if strings.Compare(currAttestor, nodeAttestor) == 0 {
-				match = true
-				break
-			}
-		}
-	}
-
-	if !match {
-		return errors.New("incorrect node attestors list inputted: at least one of the specified node attestors is not supported")
-	} else {
-		serverNodeAttestors = s.Spec.NodeAttestors
-	}
-
 	if (strings.Compare("sqlite3", strings.ToLower(s.Spec.DataStore)) == 0) && (s.Spec.Replicas > 1) {
 		return errors.New("cannot have more than 1 replica with sqlite3 database")
 	}
+
+	serverNodeAttestors = s.Spec.NodeAttestors
 
 	return nil
 }
@@ -431,11 +415,11 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 	nodeAttestorsConfig := ""
 
 	for _, nodeAttestor := range s.Spec.NodeAttestors {
-		if strings.Compare(nodeAttestor, "join_token") == 0 {
+		if strings.Compare(string(nodeAttestor), "join_token") == 0 {
 			nodeAttestorsConfig += joinTokenNodeAttestor()
-		} else if strings.Compare(nodeAttestor, "k8s_sat") == 0 {
+		} else if strings.Compare(string(nodeAttestor), "k8s_sat") == 0 {
 			nodeAttestorsConfig += k8sSatNodeAttestor(namespace)
-		} else if strings.Compare(nodeAttestor, "k8s_psat") == 0 {
+		} else if strings.Compare(string(nodeAttestor), "k8s_psat") == 0 {
 			nodeAttestorsConfig += k8sPsatNodeAttestor(namespace)
 		}
 	}

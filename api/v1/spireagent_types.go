@@ -30,7 +30,7 @@ type SpireAgentSpec struct {
 
 	TrustDomain string `json:"trustDomain"`
 
-	NodeAttestor string `json:"nodeAttestor"`
+	NodeAttestor NodeAttestor `json:"nodeAttestor"`
 
 	WorkloadAttestors []string `json:"workloadAttestors"`
 

@@ -183,7 +183,7 @@ func (in *SpireServerSpec) DeepCopyInto(out *SpireServerSpec) {
 	*out = *in
 	if in.NodeAttestors != nil {
 		in, out := &in.NodeAttestors, &out.NodeAttestors
-		*out = make([]string, len(*in))
+		*out = make([]NodeAttestor, len(*in))
 		copy(*out, *in)
 	}
 }

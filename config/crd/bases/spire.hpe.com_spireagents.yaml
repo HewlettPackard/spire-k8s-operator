@@ -38,6 +38,10 @@ spec:
               keyStorage:
                 type: string
               nodeAttestor:
+                enum:
+                - k8s_sat
+                - join_token
+                - k8s_psat
                 type: string
               serverPort:
                 type: integer

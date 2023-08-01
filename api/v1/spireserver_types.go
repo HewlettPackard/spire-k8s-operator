@@ -35,8 +35,7 @@ type SpireServerSpec struct {
 	Port int `json:"port"`
 
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:UniqueItems=true
-	NodeAttestors []string `json:"nodeAttestors"`
+	NodeAttestors []NodeAttestor `json:"nodeAttestors"`
 
 	// +kubebuilder:validation:Enum=disk;memory
 	KeyStorage string `json:"keyStorage"`
@@ -50,6 +49,9 @@ type SpireServerSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	ConnectionString string `json:"connectionString"`
 }
+
+// +kubebuilder:validation:Enum=k8s_sat;join_token;k8s_psat
+type NodeAttestor string
 
 // SpireServerStatus defines the observed state of SpireServer
 type SpireServerStatus struct {

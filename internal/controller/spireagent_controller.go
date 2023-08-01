@@ -327,11 +327,11 @@ func (r *SpireAgentReconciler) agentDaemonSetDeployment(a *spirev1.SpireAgent, n
 func (r *SpireAgentReconciler) agentConfigMapDeployment(a *spirev1.SpireAgent, namespace string) *corev1.ConfigMap {
 	nodeAttestorsConfig := ""
 
-	if strings.Compare(a.Spec.NodeAttestor, "join_token") == 0 {
+	if strings.Compare(string(a.Spec.NodeAttestor), "join_token") == 0 {
 		nodeAttestorsConfig += joinTokenAgentNodeAttestor()
-	} else if strings.Compare(a.Spec.NodeAttestor, "k8s_sat") == 0 {
+	} else if strings.Compare(string(a.Spec.NodeAttestor), "k8s_sat") == 0 {
 		nodeAttestorsConfig += k8sSatAgentNodeAttestor()
-	} else if strings.Compare(a.Spec.NodeAttestor, "k8s_psat") == 0 {
+	} else if strings.Compare(string(a.Spec.NodeAttestor), "k8s_psat") == 0 {
 		nodeAttestorsConfig += k8sPsatAgentNodeAttestor()
 	}
 
