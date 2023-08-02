@@ -415,11 +415,11 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 	nodeAttestorsConfig := ""
 
 	for _, nodeAttestor := range s.Spec.NodeAttestors {
-		if strings.Compare(string(nodeAttestor), "join_token") == 0 {
+		if strings.Compare(string(nodeAttestor.Name), "join_token") == 0 {
 			nodeAttestorsConfig += joinTokenNodeAttestor()
-		} else if strings.Compare(string(nodeAttestor), "k8s_sat") == 0 {
+		} else if strings.Compare(string(nodeAttestor.Name), "k8s_sat") == 0 {
 			nodeAttestorsConfig += k8sSatNodeAttestor(namespace)
-		} else if strings.Compare(string(nodeAttestor), "k8s_psat") == 0 {
+		} else if strings.Compare(string(nodeAttestor.Name), "k8s_psat") == 0 {
 			nodeAttestorsConfig += k8sPsatNodeAttestor(namespace)
 		}
 	}

@@ -49,8 +49,10 @@ type SpireServerSpec struct {
 	ConnectionString string `json:"connectionString"`
 }
 
-// +kubebuilder:validation:Enum=k8s_sat;join_token;k8s_psat
-type NodeAttestor string
+type NodeAttestor struct {
+	// +kubebuilder:validation:Enum=k8s_sat;join_token;k8s_psat
+	Name string `json:"name"`
+}
 
 // SpireServerStatus defines the observed state of SpireServer
 type SpireServerStatus struct {

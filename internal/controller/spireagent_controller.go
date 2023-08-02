@@ -313,25 +313,25 @@ func (r *SpireAgentReconciler) agentDaemonSetDeployment(a *spirev1.SpireAgent, n
 func (r *SpireAgentReconciler) agentConfigMapDeployment(a *spirev1.SpireAgent, namespace string) *corev1.ConfigMap {
 	nodeAttestorsConfig := ""
 
-	if strings.Compare(string(a.Spec.NodeAttestor), "join_token") == 0 {
+	if strings.Compare(string(a.Spec.NodeAttestor.Name), "join_token") == 0 {
 		nodeAttestorsConfig += joinTokenAgentNodeAttestor()
-	} else if strings.Compare(string(a.Spec.NodeAttestor), "k8s_sat") == 0 {
+	} else if strings.Compare(string(a.Spec.NodeAttestor.Name), "k8s_sat") == 0 {
 		nodeAttestorsConfig += k8sSatAgentNodeAttestor()
-	} else if strings.Compare(string(a.Spec.NodeAttestor), "k8s_psat") == 0 {
+	} else if strings.Compare(string(a.Spec.NodeAttestor.Name), "k8s_psat") == 0 {
 		nodeAttestorsConfig += k8sPsatAgentNodeAttestor()
 	}
 
 	workloadAttestorsConfig := ""
 	for _, wLAttestor := range a.Spec.WorkloadAttestors {
-		if strings.Compare(string(wLAttestor), "k8s") == 0 {
+		if strings.Compare(string(wLAttestor.Name), "k8s") == 0 {
 			workloadAttestorsConfig += k8sWLAttestor()
-		} else if strings.Compare(string(wLAttestor), "unix") == 0 {
+		} else if strings.Compare(string(wLAttestor.Name), "unix") == 0 {
 			workloadAttestorsConfig += unixWLAttestor()
-		} else if strings.Compare(string(wLAttestor), "docker") == 0 {
+		} else if strings.Compare(string(wLAttestor.Name), "docker") == 0 {
 			workloadAttestorsConfig += dockerWLAttestor()
-		} else if strings.Compare(string(wLAttestor), "systemd") == 0 {
+		} else if strings.Compare(string(wLAttestor.Name), "systemd") == 0 {
 			workloadAttestorsConfig += systemdWLAttestor()
-		} else if strings.Compare(string(wLAttestor), "windows") == 0 {
+		} else if strings.Compare(string(wLAttestor.Name), "windows") == 0 {
 			workloadAttestorsConfig += windowsWLAttestor()
 		}
 	}

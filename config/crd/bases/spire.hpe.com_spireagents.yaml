@@ -41,11 +41,16 @@ spec:
                 - memory
                 type: string
               nodeAttestor:
-                enum:
-                - k8s_sat
-                - join_token
-                - k8s_psat
-                type: string
+                properties:
+                  name:
+                    enum:
+                    - k8s_sat
+                    - join_token
+                    - k8s_psat
+                    type: string
+                required:
+                - name
+                type: object
               serverPort:
                 maximum: 65535
                 minimum: 0
@@ -54,13 +59,18 @@ spec:
                 type: string
               workloadAttestors:
                 items:
-                  enum:
-                  - k8s
-                  - unix
-                  - docker
-                  - systemd
-                  - windows
-                  type: string
+                  properties:
+                    name:
+                      enum:
+                      - k8s
+                      - unix
+                      - docker
+                      - systemd
+                      - windows
+                      type: string
+                  required:
+                  - name
+                  type: object
                 minItems: 1
                 type: array
             required:

@@ -42,8 +42,10 @@ type SpireAgentSpec struct {
 	ServerPort int `json:"serverPort"`
 }
 
-// +kubebuilder:validation:Enum=k8s;unix;docker;systemd;windows
-type WorkloadAttestor string
+type WorkloadAttestor struct {
+	// +kubebuilder:validation:Enum=k8s;unix;docker;systemd;windows
+	Name string `json:"name"`
+}
 
 // SpireAgentStatus defines the observed state of SpireAgent
 type SpireAgentStatus struct {

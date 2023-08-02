@@ -55,11 +55,16 @@ spec:
                 type: string
               nodeAttestors:
                 items:
-                  enum:
-                  - k8s_sat
-                  - join_token
-                  - k8s_psat
-                  type: string
+                  properties:
+                    name:
+                      enum:
+                      - k8s_sat
+                      - join_token
+                      - k8s_psat
+                      type: string
+                  required:
+                  - name
+                  type: object
                 minItems: 1
                 type: array
               port:

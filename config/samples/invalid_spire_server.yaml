@@ -6,7 +6,8 @@ spec:
   trustDomain: example.org
   port: 8081
   nodeAttestors: 
-    - k8s_sat
+    - name: k8s_sat
+    - name: aws_iid
   keyStorage: disk
   replicas: 0
   dataStore: sqlite3
