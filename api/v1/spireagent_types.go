@@ -25,18 +25,31 @@ import (
 
 // SpireAgentSpec defines the desired state of SpireAgent
 type SpireAgentSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// +kubebuilder:validation:Required
 
+	// Trust domain that the SPIRE agent issues identities to
 	TrustDomain string `json:"trustDomain"`
 
-	NodeAttestor string `json:"nodeAttestor"`
+	// Node attestor plugin the SPIRE agent uses
+	NodeAttestor NodeAttestor `json:"nodeAttestor"`
 
-	WorkloadAttestors []string `json:"workloadAttestors"`
+	// Workload attestor plugins the SPIRE agent uses
+	// +kubebuilder:validation:MinItems=1
+	WorkloadAttestors []WorkloadAttestor `json:"workloadAttestors"`
 
+	// Indicates whether the generated keys are stored on disk or in memory
+	// +kubebuilder:validation:Enum=disk;memory
 	KeyStorage string `json:"keyStorage"`
 
+	// Port on which the SPIRE server listens to agents
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=65535
 	ServerPort int `json:"serverPort"`
+}
+
+type WorkloadAttestor struct {
+	// +kubebuilder:validation:Enum=k8s;unix;docker;systemd;windows
+	Name string `json:"name"`
 }
 
 // SpireAgentStatus defines the observed state of SpireAgent
