@@ -11,42 +11,43 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var reconciler = &SpireAgentReconciler{
+	Client: &MockClient{
+		CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+			// Handle the create logic in the mock client
+			return nil
+		},
+	},
+	Scheme: scheme.Scheme,
+}
+
 func TestSpireAgentController(t *testing.T) {
 	// Create the objects needed for the test
-	reconciler := &SpireAgentReconciler{
-		Client: &MockClient{
-			CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-				// Handle the create logic in the mock client
-				return nil
-			},
-		},
-		Scheme: scheme.Scheme,
-	}
 
 	spireagent := &spirev1.SpireAgent{}
 	spireServiceNamespace := "test-namespace"
-	spireServiceAccount := reconciler.agentServiceAccountDeployment(spireServiceNamespace)
-	clusterRoles := reconciler.agentClusterRoleDeployment()
-	clusterRoleBinding := reconciler.agentClusterRoleBindingDeployment(spireServiceNamespace)
+	agentServiceAccount := reconciler.agentServiceAccountDeployment(spireServiceNamespace)
+	agentClusterRoles := reconciler.agentClusterRoleDeployment()
+	agentClusterRoleBinding := reconciler.agentClusterRoleBindingDeployment(spireServiceNamespace)
 	agentConfigMap := reconciler.agentConfigMapDeployment(spireagent, spireServiceNamespace)
-	spireService := reconciler.agentDaemonSetDeployment(spireagent, spireServiceNamespace)
+	agentDaemonSet := reconciler.agentDaemonSetDeployment(spireagent, spireServiceNamespace)
 
 	// Call the method you want to test
 	// Assert the expected behavior
 
-	if spireServiceAccount.Namespace != spireServiceNamespace {
-		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireServiceAccount.Namespace)
+	if agentServiceAccount.Namespace != spireServiceNamespace {
+		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, agentServiceAccount.Namespace)
 	}
-	if clusterRoles.Namespace != "" {
-		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, clusterRoles.Namespace)
+	if agentClusterRoles.Namespace != "" {
+		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, agentClusterRoles.Namespace)
 	}
-	if clusterRoleBinding.Namespace != "" {
-		t.Errorf("Expected namespace \"\", got %s", clusterRoleBinding.Namespace)
+	if agentClusterRoleBinding.Namespace != "" {
+		t.Errorf("Expected namespace \"\", got %s", agentClusterRoleBinding.Namespace)
 	}
 	if agentConfigMap.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, agentConfigMap.Namespace)
 	}
-	if spireService.Namespace != spireServiceNamespace {
-		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
+	if agentDaemonSet.Namespace != spireServiceNamespace {
+		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, agentDaemonSet.Namespace)
 	}
 }
