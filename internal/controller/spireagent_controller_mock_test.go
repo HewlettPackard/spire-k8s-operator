@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var reconciler = &SpireAgentReconciler{
+var agentReconciler = &SpireAgentReconciler{
 	Client: &MockClient{
 		CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 			// Handle the create logic in the mock client
@@ -26,11 +26,11 @@ func TestSpireAgentController(t *testing.T) {
 
 	spireagent := &spirev1.SpireAgent{}
 	spireServiceNamespace := "test-namespace"
-	agentServiceAccount := reconciler.agentServiceAccountDeployment(spireServiceNamespace)
-	agentClusterRoles := reconciler.agentClusterRoleDeployment()
-	agentClusterRoleBinding := reconciler.agentClusterRoleBindingDeployment(spireServiceNamespace)
-	agentConfigMap := reconciler.agentConfigMapDeployment(spireagent, spireServiceNamespace)
-	agentDaemonSet := reconciler.agentDaemonSetDeployment(spireagent, spireServiceNamespace)
+	agentServiceAccount := agentReconciler.agentServiceAccountDeployment(spireServiceNamespace)
+	agentClusterRoles := agentReconciler.agentClusterRoleDeployment()
+	agentClusterRoleBinding := agentReconciler.agentClusterRoleBindingDeployment(spireServiceNamespace)
+	agentConfigMap := agentReconciler.agentConfigMapDeployment(spireagent, spireServiceNamespace)
+	agentDaemonSet := agentReconciler.agentDaemonSetDeployment(spireagent, spireServiceNamespace)
 
 	// Call the method you want to test
 	// Assert the expected behavior

@@ -571,14 +571,14 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:   "",
 					Port:          8081,
-					NodeAttestors: []string{"k8s_sat"},
+					NodeAttestors: []spirev1.NodeAttestor{{Name: "k8s_sat"}},
 					KeyStorage:    "disk",
 					Replicas:      1,
 				},
 			}
-			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, spireServer)).ShouldNot(Succeed())
 		})
-		It("should delete the CRD instance created", func() {
+		It("should not create the CRD instance", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
 			Eventually(func() bool {
@@ -597,14 +597,14 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:   "example.org",
 					Port:          8081,
-					NodeAttestors: []string{"k8s_sat", "aws_iid"},
+					NodeAttestors: []spirev1.NodeAttestor{{Name: "k8s_sat"}, {Name: "aws_iid"}},
 					KeyStorage:    "disk",
 					Replicas:      1,
 				},
 			}
-			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, spireServer)).ShouldNot(Succeed())
 		})
-		It("should delete the CRD instance created", func() {
+		It("should not create the CRD instance", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
 			Eventually(func() bool {
@@ -623,14 +623,14 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:   "example.org",
 					Port:          8081,
-					NodeAttestors: []string{"k8s_sat"},
+					NodeAttestors: []spirev1.NodeAttestor{{Name: "k8s_sat"}},
 					KeyStorage:    "drive",
 					Replicas:      1,
 				},
 			}
-			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, spireServer)).ShouldNot(Succeed())
 		})
-		It("should delete the CRD instance created", func() {
+		It("should not create the CRD instance", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
 			Eventually(func() bool {
@@ -649,14 +649,14 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:   "example.org",
 					Port:          -1,
-					NodeAttestors: []string{"k8s_sat"},
+					NodeAttestors: []spirev1.NodeAttestor{{Name: "k8s_sat"}},
 					KeyStorage:    "disk",
 					Replicas:      1,
 				},
 			}
-			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, spireServer)).ShouldNot(Succeed())
 		})
-		It("should delete the CRD instance created", func() {
+		It("should not create the CRD instance", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
 			Eventually(func() bool {
@@ -675,14 +675,14 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:   "example.org",
 					Port:          8081,
-					NodeAttestors: []string{"k8s_sat"},
+					NodeAttestors: []spirev1.NodeAttestor{{Name: "k8s_sat"}},
 					KeyStorage:    "disk",
 					Replicas:      -1,
 				},
 			}
-			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, spireServer)).ShouldNot(Succeed())
 		})
-		It("should delete the CRD instance created", func() {
+		It("should not create the CRD instance", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
 			Eventually(func() bool {
@@ -701,15 +701,15 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:   "example.org",
 					Port:          8081,
-					NodeAttestors: []string{"k8s_sat"},
+					NodeAttestors: []spirev1.NodeAttestor{{Name: "k8s_sat"}},
 					KeyStorage:    "disk",
 					Replicas:      1,
 					DataStore:     "cloud",
 				},
 			}
-			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, spireServer)).ShouldNot(Succeed())
 		})
-		It("should delete the CRD instance created", func() {
+		It("should not create the CRD instance", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
 			Eventually(func() bool {
@@ -728,16 +728,16 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:      "example.org",
 					Port:             8081,
-					NodeAttestors:    []string{"k8s_sat"},
+					NodeAttestors:    []spirev1.NodeAttestor{{Name: "k8s_sat"}},
 					KeyStorage:       "disk",
 					Replicas:         1,
 					DataStore:        "sqlite3",
 					ConnectionString: "",
 				},
 			}
-			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, spireServer)).ShouldNot(Succeed())
 		})
-		It("should delete the CRD instance created", func() {
+		It("should not create the CRD instance", func() {
 			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
 			createdSpireServer := &spirev1.SpireServer{}
 			Eventually(func() bool {
@@ -756,7 +756,7 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:      "example.org",
 					Port:             8081,
-					NodeAttestors:    []string{"k8s_sat"},
+					NodeAttestors:    []spirev1.NodeAttestor{{Name: "k8s_sat"}},
 					KeyStorage:       "disk",
 					Replicas:         3,
 					DataStore:        "sqlite3",
@@ -784,7 +784,7 @@ var _ = Describe("SpireServer controller", func() {
 				Spec: spirev1.SpireServerSpec{
 					TrustDomain:      "example.org",
 					Port:             8081,
-					NodeAttestors:    []string{"k8s_sat"},
+					NodeAttestors:    []spirev1.NodeAttestor{{Name: "k8s_sat"}},
 					KeyStorage:       "disk",
 					Replicas:         1,
 					DataStore:        "sqlite3",

@@ -33,7 +33,7 @@ var (
 		Namespace: "default",
 	}
 
-	mockSpireServer = createSpireServer("example.org", 8081, []string{"k8s_sat"}, "disk", 1)
+	mockSpireServer = createSpireServer("example.org", 8081, []spirev1.NodeAttestor{{Name: "k8s_sat"}}, "disk", 1)
 )
 
 type MockClient struct {
@@ -48,7 +48,7 @@ func (m *MockClient) Create(ctx context.Context, obj client.Object, opts ...clie
 	return nil
 }
 
-func createSpireServer(trustDomain string, port int, nodeAttestors []string, keyStorage string, replicas int) *spirev1.SpireServer {
+func createSpireServer(trustDomain string, port int, nodeAttestors []spirev1.NodeAttestor, keyStorage string, replicas int) *spirev1.SpireServer {
 	return &spirev1.SpireServer{
 		TypeMeta:   serverTypeMeta,
 		ObjectMeta: serverObjectMeta,
@@ -133,7 +133,7 @@ func TestValidConfigMapSingleAttestor(t *testing.T) {
 }
 
 func TestValidConfigMapMultipleAttestors(t *testing.T) {
-	mockSpireServer2 := createSpireServer("example.org", 8081, []string{"k8s_sat", "join_token", "k8s_psat"}, "disk", 1)
+	mockSpireServer2 := createSpireServer("example.org", 8081, []spirev1.NodeAttestor{{Name: "k8s_sat"}, {Name: "join_token"}, {Name: "k8s_psat"}}, "disk", 1)
 
 	configMap := reconciler.spireConfigMapDeployment(mockSpireServer2, "default")
 
