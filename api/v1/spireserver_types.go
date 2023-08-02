@@ -25,26 +25,40 @@ import (
 
 // SpireServerSpec defines the desired state of SpireServer
 type SpireServerSpec struct {
+	// +kubebuilder:validation:Required
+
 	// Trust domain associated with the SPIRE server
 	TrustDomain string `json:"trustDomain"`
 
 	// Port on which the SPIRE server listens to agents
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=65535
 	Port int `json:"port"`
 
 	// Node attestor plugins the SPIRE server uses
-	NodeAttestors []string `json:"nodeAttestors"`
+	// +kubebuilder:validation:MinItems=1
+	NodeAttestors []NodeAttestor `json:"nodeAttestors"`
 
 	// Indicates whether the generated keys are stored on disk or in memory
+	// +kubebuilder:validation:Enum=disk;memory
 	KeyStorage string `json:"keyStorage"`
 
 	// Number of replicas for SPIRE server
+	// +kubebuilder:validation:Minimum=1
 	Replicas int `json:"replicas"`
 
 	// Indicates how server data should be stored (sqlite3, mysql, or postgres)
+	// +kubebuilder:validation:Enum=sqlite3;postgres;mysql
 	DataStore string `json:"dataStore"`
 
 	// Connection string for the datastore
+	// +kubebuilder:validation:MinLength=1
 	ConnectionString string `json:"connectionString"`
+}
+
+type NodeAttestor struct {
+	// +kubebuilder:validation:Enum=k8s_sat;join_token;k8s_psat
+	Name string `json:"name"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer

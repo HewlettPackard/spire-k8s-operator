@@ -41,25 +41,46 @@ spec:
             properties:
               connectionString:
                 description: Connection string for the datastore
+                minLength: 1
                 type: string
               dataStore:
                 description: Indicates how server data should be stored (sqlite3,
                   mysql, or postgres)
+                enum:
+                - sqlite3
+                - postgres
+                - mysql
                 type: string
               keyStorage:
                 description: Indicates whether the generated keys are stored on disk
                   or in memory
+                enum:
+                - disk
+                - memory
                 type: string
               nodeAttestors:
                 description: Node attestor plugins the SPIRE server uses
                 items:
-                  type: string
+                  properties:
+                    name:
+                      enum:
+                      - k8s_sat
+                      - join_token
+                      - k8s_psat
+                      type: string
+                  required:
+                  - name
+                  type: object
+                minItems: 1
                 type: array
               port:
                 description: Port on which the SPIRE server listens to agents
+                maximum: 65535
+                minimum: 0
                 type: integer
               replicas:
                 description: Number of replicas for SPIRE server
+                minimum: 1
                 type: integer
               trustDomain:
                 description: Trust domain associated with the SPIRE server

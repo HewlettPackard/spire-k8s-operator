@@ -4,9 +4,9 @@ metadata:
   name: invalid-spire-agent
 spec:
   trustDomain: ""
-  nodeAttestor: k8s_sat
+  nodeAttestor: 
+    name: k8s_sat
   workloadAttestors: 
-    - k8s
-    - unix
+    - name: k8s
   keyStorage: memory
   serverPort: 8081

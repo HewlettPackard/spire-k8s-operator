@@ -3,4 +3,12 @@ kind: SpireServer
 metadata:
   name: invalid-spire-server
 spec:
-  # empty fields; CRD instance should be deleted
+  trustDomain: example.org
+  port: 8081
+  nodeAttestors: 
+    - name: k8s_sat
+    - name: aws_iid
+  keyStorage: disk
+  replicas: 0
+  dataStore: sqlite3
+  connectionString: /run/spire/data/datastore.sqlite3
