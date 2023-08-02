@@ -3,7 +3,9 @@ package controller
 import (
 	"context"
 	"testing"
-
+	"github.com/stretchr/testify/assert"
+  
+	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +28,7 @@ var (
 		APIVersion: "spire.hpe.com/v1",
 		Kind:       "SpireServer",
 	}
+  
 	serverObjectMeta = metav1.ObjectMeta{
 		Name:      "valid-spire-server",
 		Namespace: "default",
@@ -142,4 +145,126 @@ func TestValidConfigMapMultipleAttestors(t *testing.T) {
 	assert.Contains(t, configMap.Data["server.conf"], "trust_domain = \"example.org\"")
 	assert.Contains(t, configMap.Data["server.conf"], "bind_port = \"8081\"")
 	assert.Contains(t, configMap.Data["server.conf"], "KeyManager \"disk\"")
+
+func TestValidNameSpaceServiceAccount(t *testing.T) {
+	spireServiceNamespace := "sameNameSpace"
+	serviceAccount := reconciler.createServiceAccount(spireServiceNamespace)
+	assert.Equal(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should be the same.")
+}
+
+func TestInvalidNameSpaceServiceAccount(t *testing.T) {
+	spireServiceNamespace := "namespace1"
+	serviceAccount := reconciler.createServiceAccount("namespace2")
+	assert.NotEqual(t, serviceAccount.Namespace, spireServiceNamespace, "Namespaces should not be the same.")
+}
+
+func TestEmptyNameSpaceServiceAccount(t *testing.T) {
+	serviceAccount := reconciler.createServiceAccount("")
+	assert.Equal(t, serviceAccount.Namespace, "", "Namespaces should be empty.")
+}
+
+func TestValidTrustBundle(t *testing.T) {
+	spireServiceNamespace := "sameNameSpace"
+	bundle := reconciler.spireBundleDeployment(spireServiceNamespace)
+	assert.Equal(t, bundle.Namespace, spireServiceNamespace, "Namespaces should be the same.")
+}
+
+func TestInvalidNameSpaceTrustBundle(t *testing.T) {
+	spireServiceNamespace := "namespace1"
+	bundle := reconciler.spireBundleDeployment("namespace2")
+	assert.NotEqual(t, bundle.Namespace, spireServiceNamespace, "Namespaces should not be the same.")
+}
+
+func TestEmptyNameSpaceTrustBundle(t *testing.T) {
+	bundle := reconciler.spireBundleDeployment("")
+	assert.Equal(t, bundle.Namespace, "", "Namespaces should be empty.")
+}
+
+func TestValidNameSpaceRoles(t *testing.T) {
+	roles := reconciler.spireRoleDeployment("default")
+	assert.Equal(t, roles.Namespace, "default")
+	assert.Equal(t, roles.Kind, "Role")
+	assert.Equal(t, roles.Name, "spire-server-configmap-role")
+	assert.Equal(t, roles.APIVersion, "rbac.authorization.k8s.io/v1")
+	assert.Equal(t, roles.Rules[0].Verbs, []string{"patch", "get", "list"})
+	assert.Equal(t, roles.Rules[0].Resources, []string{"configmaps"})
+	assert.Equal(t, roles.Rules[0].APIGroups, []string{""})
+}
+
+func TestInvalidNameSpaceRoles(t *testing.T) {
+	roles := reconciler.spireRoleDeployment("default1")
+	assert.NotEqual(t, roles.Namespace, "default2")
+}
+
+func TestEmptyNameSpaceRoles(t *testing.T) {
+	roles := reconciler.spireRoleDeployment("")
+	assert.Equal(t, roles.Namespace, "")
+}
+
+func TestValidNameSpaceRoleBinding(t *testing.T) {
+	roleBinding := reconciler.spireRoleBindingDeployment("default")
+	assert.Equal(t, roleBinding.Namespace, "default")
+	assert.Equal(t, roleBinding.Kind, "RoleBinding")
+	assert.Equal(t, roleBinding.APIVersion, "rbac.authorization.k8s.io/v1")
+	assert.Equal(t, roleBinding.Name, "spire-server-configmap-role-binding")
+	assert.Equal(t, roleBinding.RoleRef.Kind, "Role")
+	assert.Equal(t, roleBinding.RoleRef.Name, "spire-server-configmap-role")
+	assert.Equal(t, roleBinding.RoleRef.APIGroup, "rbac.authorization.k8s.io")
+	assert.Equal(t, roleBinding.Subjects[0].Kind, "ServiceAccount")
+	assert.Equal(t, roleBinding.Subjects[0].Name, "spire-server")
+	assert.Equal(t, roleBinding.Subjects[0].Namespace, "default")
+}
+
+func TestInvalidNameSpaceRoleBinding(t *testing.T) {
+	roleBinding := reconciler.spireRoleBindingDeployment("default1")
+	assert.NotEqual(t, roleBinding.Namespace, "default2")
+}
+
+func TestEmptyNameSpaceRoleBinding(t *testing.T) {
+	roleBinding := reconciler.spireRoleBindingDeployment("")
+	assert.Equal(t, roleBinding.Namespace, "")
+}
+
+func TestValidNameSpaceClusterRoles(t *testing.T) {
+	clusterRoles := reconciler.spireClusterRoleDeployment("default")
+	assert.Equal(t, clusterRoles.Namespace, "")
+	assert.Equal(t, clusterRoles.Kind, "ClusterRole")
+	assert.Equal(t, clusterRoles.Name, "spire-server-trust-role")
+	assert.Equal(t, clusterRoles.APIVersion, "rbac.authorization.k8s.io/v1")
+	assert.Equal(t, clusterRoles.Rules[0].Verbs, []string{"create"})
+	assert.Equal(t, clusterRoles.Rules[0].Resources, []string{"tokenreviews"})
+	assert.Equal(t, clusterRoles.Rules[0].APIGroups, []string{"authentication.k8s.io"})
+}
+
+func TestInvalidNameSpaceClusterRoles(t *testing.T) {
+	clusterRoles := reconciler.spireClusterRoleDeployment("default1")
+	assert.Equal(t, clusterRoles.Namespace, "")
+}
+
+func TestEmptyNameSpaceClusterRoles(t *testing.T) {
+	clusterRoles := reconciler.spireClusterRoleDeployment("")
+	assert.Equal(t, clusterRoles.Namespace, "")
+}
+
+func TestValidNameSpaceClusterRoleBinding(t *testing.T) {
+	clusterRoleBinding := reconciler.spireClusterRoleBindingDeployment("default")
+	assert.Equal(t, clusterRoleBinding.Kind, "ClusterRoleBinding")
+	assert.Equal(t, clusterRoleBinding.APIVersion, "rbac.authorization.k8s.io/v1")
+	assert.Equal(t, clusterRoleBinding.Name, "spire-server-trust-role-binding")
+	assert.Equal(t, clusterRoleBinding.RoleRef.Kind, "ClusterRole")
+	assert.Equal(t, clusterRoleBinding.RoleRef.Name, "spire-server-trust-role")
+	assert.Equal(t, clusterRoleBinding.RoleRef.APIGroup, "rbac.authorization.k8s.io")
+	assert.Equal(t, clusterRoleBinding.Subjects[0].Kind, "ServiceAccount")
+	assert.Equal(t, clusterRoleBinding.Subjects[0].Name, "spire-server")
+	assert.Equal(t, clusterRoleBinding.Subjects[0].Namespace, "default")
+}
+
+func TestInvalidNameSpaceClusterRoleBinding(t *testing.T) {
+	clusterRoleBinding := reconciler.spireClusterRoleBindingDeployment("default1")
+	assert.Equal(t, clusterRoleBinding.Namespace, "")
+}
+
+func TestEmptyNameSpaceClusterRoleBinding(t *testing.T) {
+	clusterRoleBinding := reconciler.spireClusterRoleBindingDeployment("")
+	assert.Equal(t, clusterRoleBinding.Namespace, "")
 }
