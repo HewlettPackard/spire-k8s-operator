@@ -27,13 +27,17 @@ import (
 type SpireAgentSpec struct {
 	// +kubebuilder:validation:Required
 
+  // Trust domain that the SPIRE agent issues identities to
 	TrustDomain string `json:"trustDomain"`
 
+  // Node attestor plugin the SPIRE agent uses
 	NodeAttestor NodeAttestor `json:"nodeAttestor"`
 
+  // Workload attestor plugins the SPIRE agent uses
 	// +kubebuilder:validation:MinItems=1
 	WorkloadAttestors []WorkloadAttestor `json:"workloadAttestors"`
 
+  // Indicates whether the generated keys are stored on disk or in memory
 	// +kubebuilder:validation:Enum=disk;memory
 	KeyStorage string `json:"keyStorage"`
 
