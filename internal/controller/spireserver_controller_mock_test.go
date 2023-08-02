@@ -4,13 +4,36 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
-
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+var reconciler = &SpireServerReconciler{
+	Client: &MockClient{
+		CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+			// Handle the create logic in the mock client
+			return nil
+		},
+	},
+	Scheme: scheme.Scheme,
+}
+
+var (
+	serverTypeMeta = metav1.TypeMeta{
+		APIVersion: "spire.hpe.com/v1",
+		Kind:       "SpireServer",
+	}
+
+	serverObjectMeta = metav1.ObjectMeta{
+		Name:      "valid-spire-server",
+		Namespace: "default",
+	}
+
+	mockSpireServer = createSpireServer("example.org", 8081, []string{"k8s_sat"}, "disk", 1)
 )
 
 type MockClient struct {
@@ -25,17 +48,21 @@ func (m *MockClient) Create(ctx context.Context, obj client.Object, opts ...clie
 	return nil
 }
 
-var reconciler = &SpireServerReconciler{
-	Client: &MockClient{
-		CreateFn: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-			return nil
+func createSpireServer(trustDomain string, port int, nodeAttestors []string, keyStorage string, replicas int) *spirev1.SpireServer {
+	return &spirev1.SpireServer{
+		TypeMeta:   serverTypeMeta,
+		ObjectMeta: serverObjectMeta,
+		Spec: spirev1.SpireServerSpec{
+			TrustDomain:   trustDomain,
+			Port:          port,
+			NodeAttestors: nodeAttestors,
+			KeyStorage:    keyStorage,
+			Replicas:      replicas,
 		},
-	},
-	Scheme: scheme.Scheme,
+	}
 }
 
 func TestSpireserverController(t *testing.T) {
-
 	spireserver := &spirev1.SpireServer{}
 	spireServiceNamespace := "test-namespace"
 	spireServiceAccount := reconciler.createServiceAccount(spireServiceNamespace)
@@ -78,6 +105,45 @@ func TestSpireserverController(t *testing.T) {
 	if spireService.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
 	}
+}
+
+func TestValidNameSpaceConfigMap(t *testing.T) {
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "default")
+	assert.Equal(t, configMap.Namespace, "default", "Namespaces should be the same.")
+}
+
+func TestInvalidNameSpaceConfigMap(t *testing.T) {
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "namespace1")
+	assert.NotEqual(t, configMap.Namespace, "namespace2", "Namespaces should not be the same.")
+}
+
+func TestEmptyNameSpaceConfigMap(t *testing.T) {
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "")
+	assert.Equal(t, configMap.Namespace, "", "Namespace should be empty.")
+}
+
+func TestValidConfigMapSingleAttestor(t *testing.T) {
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "default")
+
+	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"k8s_sat\"")
+
+	assert.Contains(t, configMap.Data["server.conf"], "trust_domain = \"example.org\"")
+	assert.Contains(t, configMap.Data["server.conf"], "bind_port = \"8081\"")
+	assert.Contains(t, configMap.Data["server.conf"], "KeyManager \"disk\"")
+}
+
+func TestValidConfigMapMultipleAttestors(t *testing.T) {
+	mockSpireServer2 := createSpireServer("example.org", 8081, []string{"k8s_sat", "join_token", "k8s_psat"}, "disk", 1)
+
+	configMap := reconciler.spireConfigMapDeployment(mockSpireServer2, "default")
+
+	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"k8s_sat\"")
+	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"join_token\"")
+	assert.Contains(t, configMap.Data["server.conf"], "NodeAttestor \"k8s_psat\"")
+
+	assert.Contains(t, configMap.Data["server.conf"], "trust_domain = \"example.org\"")
+	assert.Contains(t, configMap.Data["server.conf"], "bind_port = \"8081\"")
+	assert.Contains(t, configMap.Data["server.conf"], "KeyManager \"disk\"")
 }
 
 func TestValidNameSpaceServiceAccount(t *testing.T) {
