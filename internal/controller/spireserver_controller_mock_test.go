@@ -7,6 +7,7 @@ import (
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -17,6 +18,7 @@ var reconciler = &SpireServerReconciler{
 			return nil
 		},
 	},
+	Scheme: scheme.Scheme,
 }
 
 var (
