@@ -9,11 +9,13 @@ The definition can be found [here](../api/v1/spireserver_types.go).
 ## SpireServerSpec
 | Field | Required | Description |
 | ----- | -------- | ----------- |
-| `trustDomain`         | REQUIRED | The trust domain associated with the SPIRE server |
-| `port`                | REQUIRED | The port on which the SPIRE server listens to agents |
-| `nodeAttestors`       | REQUIRED | The node attestor plugins the SPIRE server uses |
+| `trustDomain`         | REQUIRED | Trust domain associated with the SPIRE server |
+| `port`                | REQUIRED | Port on which the SPIRE server listens to agents |
+| `nodeAttestors`       | REQUIRED | Node attestor plugins the SPIRE server uses |
 | `keyStorage` | REQUIRED | Indicates whether the generated keys are stored on disk or in memory |
 | `replicas` | REQUIRED | Number of replicas for SPIRE server |
+| `dataStore` | REQUIRED | Indicates how server data should be stored (`sqlite3`, `mysql`, `postgres`) |
+| `connectionString` | REQUIRED | Connection string for the datastore |
 
 ## SpireServerStatus
  Field | Description |
@@ -36,3 +38,6 @@ The definition can be found [here](../api/v1/spireserver_types.go).
         keyStorage: disk
         replicas: 1
     ```
+
+## Note
+Under the High Availability (HA) model, if your cluster has more than one replica of a SPIRE Server, it cannot use `sqlite3` as its datastore. The operator will reject and delete any SPIRE server instances with this configuration. 

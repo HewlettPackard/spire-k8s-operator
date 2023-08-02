@@ -25,27 +25,31 @@ import (
 
 // SpireServerSpec defines the desired state of SpireServer
 type SpireServerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Trust domain associated with the SPIRE server
 	TrustDomain string `json:"trustDomain"`
 
+	// Port on which the SPIRE server listens to agents
 	Port int `json:"port"`
 
+	// Node attestor plugins the SPIRE server uses
 	NodeAttestors []string `json:"nodeAttestors"`
 
+	// Indicates whether the generated keys are stored on disk or in memory
 	KeyStorage string `json:"keyStorage"`
 
+	// Number of replicas for SPIRE server
 	Replicas int `json:"replicas"`
 
+	// Indicates how server data should be stored (sqlite3, mysql, or postgres)
 	DataStore string `json:"dataStore"`
 
+	// Connection string for the datastore
 	ConnectionString string `json:"connectionString"`
 }
 
 // SpireServerStatus defines the observed state of SpireServer
 type SpireServerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Indicates whether the SPIRE server is in an error state (ERROR), initializing (INIT), live (LIVE), or ready (READY)
 	Health string `json:"health"`
 }
 

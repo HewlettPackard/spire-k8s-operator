@@ -25,17 +25,19 @@ import (
 
 // SpireAgentSpec defines the desired state of SpireAgent
 type SpireAgentSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
+	// Trust domain that the SPIRE agent issues identities to
 	TrustDomain string `json:"trustDomain"`
 
+	// Node attestor plugin the SPIRE agent uses
 	NodeAttestor string `json:"nodeAttestor"`
 
+	// Workload attestor plugins the SPIRE agent uses
 	WorkloadAttestors []string `json:"workloadAttestors"`
 
+	// Indicates whether the generated keys are stored on disk or in memory
 	KeyStorage string `json:"keyStorage"`
 
+	// Port on which the SPIRE server listens to agents
 	ServerPort int `json:"serverPort"`
 }
 
