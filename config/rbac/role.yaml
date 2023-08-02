@@ -8,6 +8,32 @@ rules:
 - apiGroups:
   - spire.hpe.com
   resources:
+  - spireagents
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spire.hpe.com
+  resources:
+  - spireagents/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - spire.hpe.com
+  resources:
+  - spireagents/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - spire.hpe.com
+  resources:
   - spireservers
   verbs:
   - create
