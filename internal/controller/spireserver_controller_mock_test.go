@@ -3,8 +3,7 @@ package controller
 import (
 	"context"
 	"testing"
-	"github.com/stretchr/testify/assert"
-  
+
 	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +27,7 @@ var (
 		APIVersion: "spire.hpe.com/v1",
 		Kind:       "SpireServer",
 	}
-  
+
 	serverObjectMeta = metav1.ObjectMeta{
 		Name:      "valid-spire-server",
 		Namespace: "default",
@@ -145,6 +144,7 @@ func TestValidConfigMapMultipleAttestors(t *testing.T) {
 	assert.Contains(t, configMap.Data["server.conf"], "trust_domain = \"example.org\"")
 	assert.Contains(t, configMap.Data["server.conf"], "bind_port = \"8081\"")
 	assert.Contains(t, configMap.Data["server.conf"], "KeyManager \"disk\"")
+}
 
 func TestValidNameSpaceServiceAccount(t *testing.T) {
 	spireServiceNamespace := "sameNameSpace"
