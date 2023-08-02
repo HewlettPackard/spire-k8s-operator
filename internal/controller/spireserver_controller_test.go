@@ -691,7 +691,7 @@ var _ = Describe("SpireServer controller", func() {
 			}, timeout, interval).Should(BeTrue())
 		})
 	})
-	Context("When creating SPIRE Server with all valid fields", func() {
+	Context("When creating SPIRE Server with invalid datastore", func() {
 		var ctx = context.Background()
 		var spireServer *spirev1.SpireServer
 		BeforeEach(func() {
@@ -704,6 +704,91 @@ var _ = Describe("SpireServer controller", func() {
 					NodeAttestors: []string{"k8s_sat"},
 					KeyStorage:    "disk",
 					Replicas:      1,
+					DataStore:     "cloud",
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should delete the CRD instance created", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with empty connection string", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:      "example.org",
+					Port:             8081,
+					NodeAttestors:    []string{"k8s_sat"},
+					KeyStorage:       "disk",
+					Replicas:         1,
+					DataStore:        "sqlite3",
+					ConnectionString: "",
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should delete the CRD instance created", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with sqlite3 datastore and > 1 replicas", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:      "example.org",
+					Port:             8081,
+					NodeAttestors:    []string{"k8s_sat"},
+					KeyStorage:       "disk",
+					Replicas:         3,
+					DataStore:        "sqlite3",
+					ConnectionString: "/run/spire/data/datastore.sqlite3",
+				},
+			}
+			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())
+		})
+		It("should delete the CRD instance created", func() {
+			serverLookupKey := types.NamespacedName{Name: spireServer.Name, Namespace: spireServer.Namespace}
+			createdSpireServer := &spirev1.SpireServer{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, serverLookupKey, createdSpireServer)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+	Context("When creating SPIRE Server with all valid fields", func() {
+		var ctx = context.Background()
+		var spireServer *spirev1.SpireServer
+		BeforeEach(func() {
+			spireServer = &spirev1.SpireServer{
+				TypeMeta:   serverTypeMeta,
+				ObjectMeta: serverObjectMeta,
+				Spec: spirev1.SpireServerSpec{
+					TrustDomain:      "example.org",
+					Port:             8081,
+					NodeAttestors:    []string{"k8s_sat"},
+					KeyStorage:       "disk",
+					Replicas:         1,
+					DataStore:        "sqlite3",
+					ConnectionString: "/run/spire/data/datastore.sqlite3",
 				},
 			}
 			Expect(k8sClient.Create(ctx, spireServer)).Should(Succeed())

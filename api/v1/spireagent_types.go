@@ -23,54 +23,49 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// SpireServerSpec defines the desired state of SpireServer
-type SpireServerSpec struct {
+// SpireAgentSpec defines the desired state of SpireAgent
+type SpireAgentSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
 	TrustDomain string `json:"trustDomain"`
 
-	Port int `json:"port"`
+	NodeAttestor string `json:"nodeAttestor"`
 
-	NodeAttestors []string `json:"nodeAttestors"`
+	WorkloadAttestors []string `json:"workloadAttestors"`
 
 	KeyStorage string `json:"keyStorage"`
 
-	Replicas int `json:"replicas"`
-
-	DataStore string `json:"dataStore"`
-
-	ConnectionString string `json:"connectionString"`
+	ServerPort int `json:"serverPort"`
 }
 
-// SpireServerStatus defines the observed state of SpireServer
-type SpireServerStatus struct {
+// SpireAgentStatus defines the observed state of SpireAgent
+type SpireAgentStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Health string `json:"health"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="Health",type=string,JSONPath=`.status.health`
 
-// SpireServer is the Schema for the spireservers API
-type SpireServer struct {
+// SpireAgent is the Schema for the spireagents API
+type SpireAgent struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SpireServerSpec   `json:"spec,omitempty"`
-	Status SpireServerStatus `json:"status,omitempty"`
+	Spec   SpireAgentSpec   `json:"spec,omitempty"`
+	Status SpireAgentStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// SpireServerList contains a list of SpireServer
-type SpireServerList struct {
+// SpireAgentList contains a list of SpireAgent
+type SpireAgentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SpireServer `json:"items"`
+	Items           []SpireAgent `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&SpireServer{}, &SpireServerList{})
+	SchemeBuilder.Register(&SpireAgent{}, &SpireAgentList{})
 }

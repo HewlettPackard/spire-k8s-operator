@@ -5,24 +5,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
-  name: spireservers.spire.hpe.com
+  name: spireagents.spire.hpe.com
 spec:
   group: spire.hpe.com
   names:
-    kind: SpireServer
-    listKind: SpireServerList
-    plural: spireservers
-    singular: spireserver
+    kind: SpireAgent
+    listKind: SpireAgentList
+    plural: spireagents
+    singular: spireagent
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .status.health
-      name: Health
-      type: string
-    name: v1
+  - name: v1
     schema:
       openAPIV3Schema:
-        description: SpireServer is the Schema for the spireservers API
+        description: SpireAgent is the Schema for the spireagents API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -37,47 +33,29 @@ spec:
           metadata:
             type: object
           spec:
-            description: SpireServerSpec defines the desired state of SpireServer
+            description: SpireAgentSpec defines the desired state of SpireAgent
             properties:
-              connectionString:
-                type: string
-              dataStore:
-                type: string
               keyStorage:
-                description: ServerDataPath string `json:"serverDataPath"` unsure
-                  how this would be validated so omitted for now
                 type: string
-              nodeAttestors:
+              nodeAttestor:
+                type: string
+              serverPort:
+                type: integer
+              trustDomain:
+                type: string
+              workloadAttestors:
                 items:
                   type: string
                 type: array
-              port:
-                type: integer
-              replicas:
-                type: integer
-              trustDomain:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
-                type: string
             required:
-            - connectionString
-            - dataStore
             - keyStorage
-            - nodeAttestors
-            - port
-            - replicas
+            - nodeAttestor
+            - serverPort
             - trustDomain
+            - workloadAttestors
             type: object
           status:
-            description: SpireServerStatus defines the observed state of SpireServer
-            properties:
-              health:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
-                type: string
-            required:
-            - health
+            description: SpireAgentStatus defines the observed state of SpireAgent
             type: object
         type: object
     served: true
