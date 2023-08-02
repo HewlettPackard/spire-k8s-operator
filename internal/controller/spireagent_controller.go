@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -64,21 +65,21 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	agent := &spirev1.SpireAgent{}
 
 	// fetching SPIRE Agent instance
-	err := r.Get(ctx, req.NamespacedName, agent)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, agent); err != nil {
 		if apiErrors.IsNotFound(err) {
 			logger.Error(err, "SPIRE Agent not found.")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 
 		logger.Error(err, "Failed to get SPIRE Agent instance.")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, err
 	}
 
-	err = validateAgentYaml(agent, r, ctx)
-	if err != nil {
-		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE agent. Deleting old instance of CRD.")
-		err = r.Delete(ctx, agent)
+	if err := validateAgentYaml(agent, r, ctx); err != nil {
+		if errDelete := r.Delete(ctx, agent); errDelete != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to delete old instance of CRD: %w, original error: %v", errDelete, err)
+		}
+
 		return ctrl.Result{}, err
 	}
 

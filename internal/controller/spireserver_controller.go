@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -73,23 +74,24 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	spireserver := &spirev1.SpireServer{}
 
 	// fetching SPIRE Server instance
-	err := r.Get(ctx, req.NamespacedName, spireserver)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, spireserver); err != nil {
 		if apiErrors.IsNotFound(err) {
 			logger.Error(err, "SPIRE server not found.")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 
 		logger.Error(err, "Failed to get SPIRE Server instance.")
-		return ctrl.Result{}, nil
-	}
-
-	err = validateYaml(spireserver)
-	if err != nil {
-		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE server. Deleting old instance of CRD.")
-		err = r.Delete(ctx, spireserver)
 		return ctrl.Result{}, err
 	}
+
+	if err := validateYaml(spireserver); err != nil {
+		if errDelete := r.Delete(ctx, spireserver); errDelete != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to delete old instance of CRD: %w, original error: %v", errDelete, err)
+		}
+
+		return ctrl.Result{}, err
+	}
+
 	serverPort = spireserver.Spec.Port
 
 	serviceAccount := r.createServiceAccount(req.Namespace)
@@ -123,7 +125,7 @@ func (r *SpireServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	for key, value := range components {
-		err = r.Create(ctx, value.(client.Object))
+		err := r.Create(ctx, value.(client.Object))
 		result, createError := checkIfFailToCreate(err, key, logger)
 		if createError != nil {
 			err = createError
