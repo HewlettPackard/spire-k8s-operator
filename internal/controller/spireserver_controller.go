@@ -157,7 +157,7 @@ func validateYaml(s *spirev1.SpireServer) error {
 	}
 
 	if slices.Contains(s.Spec.NodeAttestors, spirev1.NodeAttestor{Name: "sshpop"}) {
-		if strings.Compare(s.Spec.CertAuthoritiesPath, "") == 0 && len(s.Spec.CertAuthorities) == 0 {
+		if len(s.Spec.CertAuthoritiesPath) == 0 && len(s.Spec.CertAuthorities) == 0 {
 			return errors.New("both certAuthorities and certAuthoritiesPath cannot be empty with sshpop node attestor")
 		}
 	}

@@ -176,6 +176,12 @@ func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx conte
 		return errors.New("the inputted node attestor is not supported by the server")
 	}
 
+	if strings.Compare(a.Spec.NodeAttestor.Name, "x509pop") == 0 {
+		if len(a.Spec.PrivateKeyPath) == 0 || len(a.Spec.CertificatePath) == 0 {
+			return errors.New("private key path or certificate path must be configured for x509pop node attestor")
+		}
+	}
+
 	return nil
 }
 
@@ -320,6 +326,8 @@ func (r *SpireAgentReconciler) agentConfigMapDeployment(a *spirev1.SpireAgent, n
 		nodeAttestorsConfig += k8sSatAgentNodeAttestor()
 	} else if strings.Compare(string(a.Spec.NodeAttestor.Name), "k8s_psat") == 0 {
 		nodeAttestorsConfig += k8sPsatAgentNodeAttestor()
+	} else if strings.Compare(string(a.Spec.NodeAttestor.Name), "x509pop") == 0 {
+		nodeAttestorsConfig += x509popAgentNodeAttestor(a.Spec.PrivateKeyPath, a.Spec.CertificatePath)
 	}
 
 	workloadAttestorsConfig := ""
@@ -387,6 +395,16 @@ func k8sPsatAgentNodeAttestor() string {
 		
 				}
 			}
+		}
+	}`
+}
+
+func x509popAgentNodeAttestor(privateKeyPath string, certificatePath string) string {
+	return `
+	NodeAttestor "x509pop" {
+		plugin_data {
+			private_key_path = "` + privateKeyPath + `"
+            certificate_path = "` + certificatePath + `"
 		}
 	}`
 }

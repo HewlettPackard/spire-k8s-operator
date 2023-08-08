@@ -47,10 +47,12 @@ type SpireAgentSpec struct {
 	ServerPort int `json:"serverPort"`
 
 	// The path to the private key on disk for the x509pop node attestor
+	// +kubebuilder:validation:Pattern=`^(.+)/([^/]+).(pem)$`
 	// +kubebuilder:validation:Optional
 	PrivateKeyPath string `json:"privateKeyPath"`
 
 	// The path to the certificate bundle on disk for the x509pop node attestor
+	// +kubebuilder:validation:Pattern=`^(.+)/([^/]+).(pem)$`
 	// +kubebuilder:validation:Optional
 	CertificatePath string `json:"certificatePath"`
 
