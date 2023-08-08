@@ -6,7 +6,7 @@ spec:
   trustDomain: example.org
   port: 8081
   nodeAttestors: 
-    - k8s_sat
+    - name: k8s_sat
   keyStorage: disk
   replicas: 1
   dataStore: sqlite3

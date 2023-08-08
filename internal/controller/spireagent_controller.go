@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -44,10 +45,6 @@ type SpireAgentReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-var (
-	supportedWorkloadAttestors = []string{"k8s", "unix", "docker", "systemd", "windows"}
-)
-
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=spire.hpe.com,resources=spireagents/finalizers,verbs=update
@@ -68,21 +65,21 @@ func (r *SpireAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	agent := &spirev1.SpireAgent{}
 
 	// fetching SPIRE Agent instance
-	err := r.Get(ctx, req.NamespacedName, agent)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, agent); err != nil {
 		if apiErrors.IsNotFound(err) {
 			logger.Error(err, "SPIRE Agent not found.")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 
 		logger.Error(err, "Failed to get SPIRE Agent instance.")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, err
 	}
 
-	err = validateAgentYaml(agent, r, ctx)
-	if err != nil {
-		logger.Error(err, "Failed to validate YAML file so cannot deploy SPIRE agent. Deleting old instance of CRD.")
-		err = r.Delete(ctx, agent)
+	if err := validateAgentYaml(agent, r, ctx); err != nil {
+		if errDelete := r.Delete(ctx, agent); errDelete != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to delete old instance of CRD: %w, original error: %v", errDelete, err)
+		}
+
 		return ctrl.Result{}, err
 	}
 
@@ -177,16 +174,6 @@ func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx conte
 
 	if !(slices.Contains(serverNodeAttestors, a.Spec.NodeAttestor)) {
 		return errors.New("the inputted node attestor is not supported by the server")
-	}
-
-	for _, currWLAttestor := range a.Spec.WorkloadAttestors {
-		if !(slices.Contains(supportedWorkloadAttestors, currWLAttestor)) {
-			return errors.New("incorrect workload attestors list inputted: at least one of the specified workload attestors is not supported")
-		}
-	}
-
-	if !((strings.Compare("disk", strings.ToLower(a.Spec.KeyStorage)) == 0) || (strings.Compare("memory", strings.ToLower(a.Spec.KeyStorage)) == 0)) {
-		return errors.New("generated key storage is only supported on disk or in memory")
 	}
 
 	return nil
@@ -327,25 +314,25 @@ func (r *SpireAgentReconciler) agentDaemonSetDeployment(a *spirev1.SpireAgent, n
 func (r *SpireAgentReconciler) agentConfigMapDeployment(a *spirev1.SpireAgent, namespace string) *corev1.ConfigMap {
 	nodeAttestorsConfig := ""
 
-	if strings.Compare(a.Spec.NodeAttestor, "join_token") == 0 {
+	if strings.Compare(string(a.Spec.NodeAttestor.Name), "join_token") == 0 {
 		nodeAttestorsConfig += joinTokenAgentNodeAttestor()
-	} else if strings.Compare(a.Spec.NodeAttestor, "k8s_sat") == 0 {
+	} else if strings.Compare(string(a.Spec.NodeAttestor.Name), "k8s_sat") == 0 {
 		nodeAttestorsConfig += k8sSatAgentNodeAttestor()
-	} else if strings.Compare(a.Spec.NodeAttestor, "k8s_psat") == 0 {
+	} else if strings.Compare(string(a.Spec.NodeAttestor.Name), "k8s_psat") == 0 {
 		nodeAttestorsConfig += k8sPsatAgentNodeAttestor()
 	}
 
 	workloadAttestorsConfig := ""
 	for _, wLAttestor := range a.Spec.WorkloadAttestors {
-		if strings.Compare(wLAttestor, "k8s") == 0 {
+		if strings.Compare(string(wLAttestor.Name), "k8s") == 0 {
 			workloadAttestorsConfig += k8sWLAttestor()
-		} else if strings.Compare(wLAttestor, "unix") == 0 {
+		} else if strings.Compare(string(wLAttestor.Name), "unix") == 0 {
 			workloadAttestorsConfig += unixWLAttestor()
-		} else if strings.Compare(wLAttestor, "docker") == 0 {
+		} else if strings.Compare(string(wLAttestor.Name), "docker") == 0 {
 			workloadAttestorsConfig += dockerWLAttestor()
-		} else if strings.Compare(wLAttestor, "systemd") == 0 {
+		} else if strings.Compare(string(wLAttestor.Name), "systemd") == 0 {
 			workloadAttestorsConfig += systemdWLAttestor()
-		} else if strings.Compare(wLAttestor, "windows") == 0 {
+		} else if strings.Compare(string(wLAttestor.Name), "windows") == 0 {
 			workloadAttestorsConfig += windowsWLAttestor()
 		}
 	}
