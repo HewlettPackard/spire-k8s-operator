@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -152,6 +154,12 @@ func validateYaml(s *spirev1.SpireServer) error {
 
 	if (strings.Compare("sqlite3", strings.ToLower(s.Spec.DataStore)) == 0) && (s.Spec.Replicas > 1) {
 		return errors.New("cannot have more than 1 replica with sqlite3 database")
+	}
+
+	if slices.Contains(s.Spec.NodeAttestors, spirev1.NodeAttestor{Name: "sshpop"}) {
+		if strings.Compare(s.Spec.CertAuthoritiesPath, "") == 0 && len(s.Spec.CertAuthorities) == 0 {
+			return errors.New("both certAuthorities and certAuthoritiesPath cannot be empty with sshpop node attestor")
+		}
 	}
 
 	serverNodeAttestors = s.Spec.NodeAttestors
@@ -425,6 +433,8 @@ func (r *SpireServerReconciler) spireConfigMapDeployment(s *spirev1.SpireServer,
 			nodeAttestorsConfig += k8sPsatNodeAttestor(namespace)
 		} else if strings.Compare(string(nodeAttestor.Name), "x509pop") == 0 {
 			nodeAttestorsConfig += x509popNodeAttestor(s.Spec.CABundlePath)
+		} else if strings.Compare(string(nodeAttestor.Name), "x509pop") == 0 {
+			nodeAttestorsConfig += sshpopNodeAttestor(s.Spec.CertAuthorities, s.Spec.CertAuthoritiesPath)
 		}
 	}
 
@@ -496,6 +506,37 @@ func x509popNodeAttestor(bundlePath string) string {
 	NodeAttestor "x509pop" {
 		plugin_data {
 			ca_bundle_path = "` + bundlePath + `"
+		}
+	}`
+}
+
+func sshpopNodeAttestor(certAuthorities []string, certAuthoritiesPath string) string {
+	if len(certAuthorities) == 0 {
+		return `
+
+		NodeAttestor "sshpop" {
+			plugin_data {
+				cert_authorities_path = "` + certAuthoritiesPath + `"
+			}
+		}`
+	}
+
+	if strings.Compare(certAuthoritiesPath, "") == 0 {
+		return `
+
+		NodeAttestor "sshpop" {
+			plugin_data {
+				cert_authorities = "[` + strings.Join(certAuthorities, ", ") + `]"
+			}
+		}`
+	}
+
+	return `
+
+	NodeAttestor "sshpop" {
+		plugin_data {
+			cert_authorities = "[` + strings.Join(certAuthorities, ", ") + `]"
+			cert_authorities_path = "` + certAuthoritiesPath + `"
 		}
 	}`
 }

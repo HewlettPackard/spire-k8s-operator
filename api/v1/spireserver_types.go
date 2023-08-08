@@ -70,7 +70,7 @@ type SpireServerSpec struct {
 }
 
 type NodeAttestor struct {
-	// +kubebuilder:validation:Enum=k8s_sat;join_token;k8s_psat
+	// +kubebuilder:validation:Enum=k8s_sat;join_token;k8s_psat;x509pop;sshpop
 	Name string `json:"name"`
 }
 
