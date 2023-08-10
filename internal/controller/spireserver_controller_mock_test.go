@@ -107,6 +107,16 @@ func TestSpireserverController(t *testing.T) {
 	}
 }
 
+func TestCheckTrustDomain(t *testing.T) {
+	validTrustDomain := checkTrustDomain("trustdomain")
+	assert.Equal(t, validTrustDomain, nil, "There should be no error with \"trustdomain\"")
+}
+
+func TestInvalidCheckTrustDomain(t *testing.T) {
+	invalidTrustDomain := checkTrustDomain("3939393939393939393")
+	assert.Equal(t, invalidTrustDomain, nil, "There should be an error with \"3939393939393939393\"")
+}
+
 func TestValidNameSpaceConfigMap(t *testing.T) {
 	configMap := reconciler.spireConfigMapDeployment(mockSpireServer, "default")
 	assert.Equal(t, configMap.Namespace, "default", "Namespaces should be the same.")

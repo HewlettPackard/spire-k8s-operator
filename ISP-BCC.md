@@ -15,6 +15,12 @@ Base choice coverage is a testing criterion that focuses on testing the various 
 |        | server.Name (string)       | | | |
 
 
+### checkTrustDomain(trustDomain string)
+| Parameter   | Type  | Partition   | Value  | Expected Output |
+|---|---|---|---|---|
+| trustDomain | string | trustDomain == "trustdomain" | SPIRE server or agent exists | true |
+| | | trustDomain == "393939393939" | SPIRE server or agent exists | false |
+
 #### validateYaml(s *spirev1.SpireServer)
 | Parameter   | Type  | Partition   | Value  | Expected Output |
 |---|---|---|---|---|
