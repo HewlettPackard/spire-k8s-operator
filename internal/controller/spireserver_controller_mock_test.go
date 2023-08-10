@@ -107,14 +107,43 @@ func TestSpireserverController(t *testing.T) {
 	}
 }
 
-func TestCheckTrustDomain(t *testing.T) {
-	validTrustDomain := checkTrustDomain("trustdomain")
-	assert.Equal(t, validTrustDomain, nil, "There should be no error with \"trustdomain\"")
+func TestValidDNSStringTrustDomain(t *testing.T) {
+	validTrustDomain := checkTrustDomain("prod.acme.com")
+	assert.Equal(t, validTrustDomain, nil, "There should be no error with \"prod.acme.com\"")
 }
 
-func TestInvalidCheckTrustDomain(t *testing.T) {
-	invalidTrustDomain := checkTrustDomain("3939393939393939393")
-	assert.Equal(t, invalidTrustDomain, nil, "There should be an error with \"3939393939393939393\"")
+func TestInvalidDNSStringTrustDomain(t *testing.T) {
+	invalidTrustDomain := checkTrustDomain("prod@acme.com")
+	assert.NotEqual(t, invalidTrustDomain, nil, "There should be an error with \"prod@acme.com\"")
+}
+
+func TestValidDNSNumberTrustDomain(t *testing.T) {
+	validTrustDomain := checkTrustDomain("8-8-8-8")
+	assert.Equal(t, validTrustDomain, nil, "There should be no error with \"8-8-8-8\"")
+}
+
+func TestInvalidDNSNumberTrustDomain(t *testing.T) {
+	invalidTrustDomain := checkTrustDomain("8*8*8*8")
+	assert.NotEqual(t, invalidTrustDomain, nil, "There should be an error with \"8*8*8*8\"")
+}
+
+func TestValidStringTrustDomain(t *testing.T) {
+	validTrustDomain := checkTrustDomain("thisisatrustdomain")
+	assert.Equal(t, validTrustDomain, nil, "There should be no error with \"thisisatrustdomain\"")
+}
+
+func TestInvalidStringTrustDomain(t *testing.T) {
+	invalidTrustDomain := checkTrustDomain("this is an invalid trust domain")
+	assert.NotEqual(t, invalidTrustDomain, nil, "There should be an error with \"this is an invalid trust domain\"")
+}
+func TestValidNumberTrustDomain(t *testing.T) {
+	validTrustDomain := checkTrustDomain("393939")
+	assert.Equal(t, validTrustDomain, nil, "There should be no error with \"393939\"")
+}
+
+func TestInvalidNumberTrustDomain(t *testing.T) {
+	invalidTrustDomain := checkTrustDomain("*10001")
+	assert.NotEqual(t, invalidTrustDomain, nil, "There should be an error with \"*10001\"")
 }
 
 func TestValidNameSpaceConfigMap(t *testing.T) {
