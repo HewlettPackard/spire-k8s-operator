@@ -161,10 +161,9 @@ func (r *SpireAgentReconciler) agentClusterRoleBindingDeployment(namespace strin
 }
 
 func validateAgentYaml(a *spirev1.SpireAgent, r *SpireAgentReconciler, ctx context.Context) error {
-	invalidTrustDomain := false
-	checkTrustDomain(a.Spec.TrustDomain, &invalidTrustDomain)
+	invalidTrustDomain := checkTrustDomain(a.Spec.TrustDomain)
 
-	if invalidTrustDomain {
+	if invalidTrustDomain != nil {
 		return errors.New("trust domain is invalid")
 	}
 

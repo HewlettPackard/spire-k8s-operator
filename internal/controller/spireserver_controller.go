@@ -143,10 +143,9 @@ func checkIfFailToCreate(err error, name string, logger logr.Logger) (ctrl.Resul
 }
 
 func validateYaml(s *spirev1.SpireServer) error {
-	invalidTrustDomain := false
-	checkTrustDomain(s.Spec.TrustDomain, &invalidTrustDomain)
+	invalidTrustDomain := checkTrustDomain(s.Spec.TrustDomain)
 
-	if invalidTrustDomain {
+	if invalidTrustDomain != nil {
 		return errors.New("trust domain is invalid")
 	}
 
@@ -159,15 +158,9 @@ func validateYaml(s *spirev1.SpireServer) error {
 	return nil
 }
 
-func checkTrustDomain(trustDomain string, invalidTrustDomain *bool) {
-	defer func() {
-		if err := recover(); err != nil {
-			*invalidTrustDomain = true
-		}
-	}()
-
-	spiffeid.RequireTrustDomainFromString(trustDomain)
-	*invalidTrustDomain = false
+func checkTrustDomain(trustDomain string) error {
+	_, err := spiffeid.TrustDomainFromString(trustDomain)
+	return err
 }
 
 func (r *SpireServerReconciler) spireClusterRoleBindingDeployment(namespace string) *rbacv1.ClusterRoleBinding {

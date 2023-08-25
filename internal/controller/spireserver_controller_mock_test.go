@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
 	spirev1 "github.com/glcp/spire-k8s-operator/api/v1"
+	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -105,6 +107,69 @@ func TestSpireserverController(t *testing.T) {
 	if spireService.Namespace != spireServiceNamespace {
 		t.Errorf("Expected namespace %s, got %s", spireServiceNamespace, spireService.Namespace)
 	}
+}
+
+func TestValidDNSStringTrustDomain(t *testing.T) {
+	_, dnsValue := dns.IsDomainName("prod.acme.com")
+	validTrustDomain := checkTrustDomain("prod.acme.com")
+	if validTrustDomain == nil && dnsValue {
+		trustDomainValid := true
+		assert.Equal(t, trustDomainValid, dnsValue, "There should be no error with \"prod.acme.com\"")
+	}
+}
+
+func TestInvalidDNSStringTrustDomain(t *testing.T) {
+	_, dnsValue := dns.IsDomainName("prod@acme.com")
+	validTrustDomain := checkTrustDomain("prod@acme.com")
+	assert.Equal(t, dnsValue, true, "Even though it is an invalid DNS, function only checks for 8 bit protocol and character limit.")
+	assert.NotEqual(t, validTrustDomain, nil, "There should be an error with \"prod@acme.com\"")
+}
+
+func TestValidDNSNumberTrustDomain(t *testing.T) {
+	_, dnsValue := dns.IsDomainName("8-8-8-8")
+	validTrustDomain := checkTrustDomain("8-8-8-8")
+	if validTrustDomain == nil && dnsValue {
+		trustDomainValid := true
+		assert.Equal(t, trustDomainValid, dnsValue, "There should be no error with \"8-8-8-8\"")
+	}
+}
+
+func TestInvalidDNSNumberTrustDomain(t *testing.T) {
+	_, dnsValue := dns.IsDomainName("8*8*8*8")
+	validTrustDomain := checkTrustDomain("8*8*8*8")
+	assert.Equal(t, dnsValue, true, "Even though it is an invalid DNS, function only checks for 8 bit protocol and character limit.")
+	assert.NotEqual(t, validTrustDomain, nil, "There should be an error with \"8*8*8*8\"")
+}
+
+func TestValidStringTrustDomain(t *testing.T) {
+	_, dnsValue := dns.IsDomainName("thisisatrustdomain")
+	validTrustDomain := checkTrustDomain("thisisatrustdomain")
+	if validTrustDomain == nil && dnsValue {
+		trustDomainValid := true
+		assert.Equal(t, trustDomainValid, dnsValue, "There should be no error with \"thisisatrustdomain\"")
+	}
+}
+
+func TestInvalidStringTrustDomain(t *testing.T) {
+	_, dnsValue := dns.IsDomainName("this is an invalid trust domain")
+	invalidTrustDomain := checkTrustDomain("this is an invalid trust domain")
+	assert.Equal(t, dnsValue, true, "Even though it is an invalid DNS, function only checks for 8 bit protocol and character limit.")
+	assert.NotEqual(t, invalidTrustDomain, nil, "There should be an error with \"this is an invalid trust domain\"")
+}
+func TestValidNumberTrustDomain(t *testing.T) {
+	_, dnsValue := dns.IsDomainName("393939")
+	validTrustDomain := checkTrustDomain("393939")
+	if validTrustDomain == nil && dnsValue {
+		trustDomainValid := true
+		assert.Equal(t, trustDomainValid, dnsValue, "There should be no error with \"393939\"")
+	}
+}
+
+func TestInvalidNumberTrustDomain(t *testing.T) {
+	_, dnsValue := dns.IsDomainName("*10001")
+	invalidTrustDomain := checkTrustDomain("*10001")
+	assert.Equal(t, dnsValue, true, "Even though it is an invalid DNS, function only checks for 8 bit protocol and character limit.")
+	assert.NotEqual(t, invalidTrustDomain, nil, "There should be an error with \"*10001\"")
 }
 
 func TestValidNameSpaceConfigMap(t *testing.T) {
